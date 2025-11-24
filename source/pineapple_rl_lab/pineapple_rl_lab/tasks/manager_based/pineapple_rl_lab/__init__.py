@@ -11,13 +11,22 @@ from . import agents
 # Register Gym environments.
 ##
 
-
 gym.register(
-    id="Template-Pineapple-Rl-Lab-v0",
+    id="Template-Pineapple-Rl-Lab-v1",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg:PineappleRlLabEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
+        "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg_v1:PineappleFlatEnvCfgV1",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PineappleFlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Template-Pineapple-Rl-Lab-Play-v1",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg_v1:PineappleFlatEnvCfgV1_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PineappleFlatPPORunnerCfg",
     },
 )
