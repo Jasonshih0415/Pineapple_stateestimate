@@ -83,7 +83,7 @@ PINEAPPLE_V1_CFG = ArticulationCfg(
         fix_base=False,
         merge_fixed_joints=True,
         replace_cylinders_with_capsules=False,
-        asset_path=f"{ISAACLAB_ASSETS_DATA_DIR}/Robots/csl/pineapplev1_description/urdf/pineapple0916.urdf",
+        asset_path=f"{ISAACLAB_ASSETS_DATA_DIR}/Robots/csl/pineapple/urdf/pineapple.urdf",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -104,9 +104,11 @@ PINEAPPLE_V1_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.3),
         joint_pos={
+            "L_hip_joint": 0.0,
             "L_thigh_joint": 1.2533,
             "L_calf_joint": -2.0479,
             "L_wheel_joint": 0.0,
+            "R_hip_joint": 0.0,
             "R_thigh_joint": 1.2533,
             "R_calf_joint": -2.0479,
             "R_wheel_joint": 0.0,

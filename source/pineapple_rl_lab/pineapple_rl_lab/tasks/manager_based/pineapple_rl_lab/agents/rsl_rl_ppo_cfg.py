@@ -12,7 +12,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 class PineappleFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 5000
-    save_interval = 50
+    save_interval = 100
     experiment_name = "pineapple_flat"
     store_code_state = False
     policy = RslRlPpoActorCriticCfg(
