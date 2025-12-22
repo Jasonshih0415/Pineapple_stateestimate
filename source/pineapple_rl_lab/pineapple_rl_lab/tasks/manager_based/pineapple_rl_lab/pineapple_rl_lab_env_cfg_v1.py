@@ -202,7 +202,7 @@ class PineappleEventCfg:
     )
 
     reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_scale,
+        func=mdp.reset_joints_by_offset,
         mode="reset",
         params={
             "position_range": (-0.2, 0.2),
