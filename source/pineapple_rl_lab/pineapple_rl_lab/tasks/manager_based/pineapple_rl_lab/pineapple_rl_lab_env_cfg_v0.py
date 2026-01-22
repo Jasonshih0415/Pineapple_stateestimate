@@ -20,12 +20,12 @@ from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import Lo
 ##
 # Pre-defined configs
 ##
-from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V1_CFG  # isort: skip
+from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V0_CFG  # isort: skip
 
-LEG_JOINT_NAMES = ["L_hip_joint", "L_thigh_joint", "L_calf_joint", "R_hip_joint", "R_thigh_joint", "R_calf_joint"]
+LEG_JOINT_NAMES = ["L_thigh_joint", "L_calf_joint", "R_thigh_joint", "R_calf_joint"]
 WHEEL_JOINT_NAMES = ["L_wheel_joint", "R_wheel_joint"]
 BASE_LINK_NAME = "base_link"
-FOOT_LINK_NAME = ".*_wheel"
+FOOT_LINK_NAME = ".*_wheel_link"
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
     size=(8.0, 8.0),
@@ -223,15 +223,6 @@ class PineappleEventCfg:
         },
     )
 
-    # randomize_rigid_body_com = EventTerm(
-    #     func=mdp.randomize_rigid_body_com,
-    #     mode="reset",
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
-    #         "com_range": {"x": (-0.01, 0.01), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
-    #     },
-    # )
-
 
     # interval
     push_robot = EventTerm(
@@ -271,7 +262,7 @@ class PineappleRewardsCfg:
     base_height = RewardTermCfg(
         func=mdp.base_height_l2, 
         weight=-20.0, 
-        params={"asset_cfg": SceneEntityCfg("robot"), "target_height": 0.2}
+        params={"asset_cfg": SceneEntityCfg("robot"), "target_height": 0.1871}
     )
     joint_acc = RewardTermCfg(
         func=mdp.joint_acc_l2,
@@ -379,7 +370,7 @@ class PineappleCurriculumCfg:
 
 
 @configclass
-class PineappleFlatEnvCfgV1(LocomotionVelocityRoughEnvCfg):
+class PineappleFlatEnvCfgV0(LocomotionVelocityRoughEnvCfg):
 
     # Basic settings
     observations: PineappleObservationsCfg = PineappleObservationsCfg()
@@ -414,7 +405,7 @@ class PineappleFlatEnvCfgV1(LocomotionVelocityRoughEnvCfg):
         self.scene.contact_forces.update_period = self.sim.dt
 
         # switch robot to Pineapple
-        self.scene.robot = PINEAPPLE_V1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = PINEAPPLE_V0_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # terrain
         self.scene.terrain = TerrainImporterCfg(
@@ -449,7 +440,7 @@ class PineappleFlatEnvCfgV1(LocomotionVelocityRoughEnvCfg):
         self.scene.height_scanner = None
 
 
-class PineappleFlatEnvCfgV1_PLAY(PineappleFlatEnvCfgV1):
+class PineappleFlatEnvCfgV0_PLAY(PineappleFlatEnvCfgV0):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()
