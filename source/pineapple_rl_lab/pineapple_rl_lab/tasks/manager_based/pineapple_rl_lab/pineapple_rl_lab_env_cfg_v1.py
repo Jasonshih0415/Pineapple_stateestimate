@@ -110,8 +110,10 @@ class PineappleObservationsCfg:
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
-            self.enable_corruption = False
+            self.enable_corruption = True
             self.concatenate_terms = True
+            self.history_length = 6
+            self.flatten_history_dim = True
 
     @configclass
     class CriticCfg(ObsGroup):
