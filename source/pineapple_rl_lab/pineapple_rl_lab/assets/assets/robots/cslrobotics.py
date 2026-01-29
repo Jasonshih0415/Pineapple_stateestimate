@@ -122,7 +122,7 @@ PINEAPPLE_V1_CFG = ArticulationCfg(
             effort_limit=23.7,
             saturation_effort=23.7,
             velocity_limit=30.1,
-            stiffness=25.0,
+            stiffness=50.0,
             damping=0.5,
             friction=0.0,
         ),

@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 #     asset: Articulation = env.scene[asset_cfg.name]
 #     return torch.linalg.norm((asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1)
 
+
 def action_smoothness(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Second-order action smoothness penalty: ||a_t - 2 a_{t-1} + a_{t-2}||^2."""
     # Ensure a two-step history is available
@@ -48,9 +49,10 @@ def action_smoothness(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneE
     penalty = torch.sum(torch.square(diff2), dim=1)
 
     # Shift history for next step
-    env._prev_prev_action = a_t1.clone()
+    env._prev_prev_action = env.action_manager.prev_action.clone()
 
     return penalty
+
 
 def joint_align(
     env: ManagerBasedRLEnv,

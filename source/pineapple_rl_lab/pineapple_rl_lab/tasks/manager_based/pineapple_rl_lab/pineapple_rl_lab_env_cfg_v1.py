@@ -22,6 +22,8 @@ from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import Lo
 ##
 from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V1_CFG  # isort: skip
 
+HIP_JOINT_NAMES = ["L_hip_joint", "R_hip_joint"]
+LOWER_JOINT_NAMES = ["L_thigh_joint", "L_calf_joint", "R_thigh_joint", "R_calf_joint"]
 LEG_JOINT_NAMES = ["L_hip_joint", "L_thigh_joint", "L_calf_joint", "R_hip_joint", "R_thigh_joint", "R_calf_joint"]
 WHEEL_JOINT_NAMES = ["L_wheel_joint", "R_wheel_joint"]
 BASE_LINK_NAME = "base_link"
@@ -61,12 +63,12 @@ class PineappleCommandsCfg:
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.1,
+        rel_standing_envs=0.2,
         rel_heading_envs=0.0,
         heading_command=False,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
+            lin_vel_x=(-2.0, 2.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
         ),
     )
 
@@ -87,7 +89,7 @@ class PineappleObservationsCfg:
             func=mdp.base_ang_vel, 
             scale=0.25,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.1, n_max=0.1)
+            noise=Unoise(n_min=-0.2, n_max=0.2)
         )
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
@@ -99,13 +101,13 @@ class PineappleObservationsCfg:
             func=mdp.joint_pos_rel, 
             scale=1.0,
             params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)}, 
-            noise=Unoise(n_min=-0.05, n_max=0.05)
+            noise=Unoise(n_min=-0.01, n_max=0.01)
         )
         joint_vel = ObsTerm(
             func=mdp.joint_vel_rel, 
             scale=0.05,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.5, n_max=0.5)
+            noise=Unoise(n_min=-1.5, n_max=1.5)
         )
         actions = ObsTerm(func=mdp.last_action)
 
@@ -260,11 +262,19 @@ class PineappleRewardsCfg:
     # -- penalties
     # is_terminated = RewardTermCfg(func=mdp.is_terminated, weight=-200.0)
     action_smoothness = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
+
     action_smoothness_2 = RewardTermCfg(
         func=pineapple_mdp.action_smoothness, 
         weight=-0.01,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=HIP_JOINT_NAMES)},
     )
+
+    action_smoothness_3 = RewardTermCfg(
+        func=pineapple_mdp.action_smoothness, 
+        weight=-0.01,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=LOWER_JOINT_NAMES)},
+    )
+
     lin_vel_z_l2 = RewardTermCfg(func=mdp.lin_vel_z_l2, weight=-1.0)
     ang_vel_xy_l2 = RewardTermCfg(func=mdp.ang_vel_xy_l2, weight=-0.05)
     base_orientation = RewardTermCfg(

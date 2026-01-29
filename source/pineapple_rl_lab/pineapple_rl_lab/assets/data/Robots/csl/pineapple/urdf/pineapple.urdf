@@ -92,7 +92,7 @@
     <child
       link="L_hip" />
     <axis
-      xyz="-1 0 0" />
+      xyz="1 0 0" />
     <limit
       lower="-0.52358"
       upper="0.52358"
@@ -312,7 +312,7 @@
     <child
       link="R_hip" />
     <axis
-      xyz="-1 0 0" />
+      xyz="1 0 0" />
     <limit
       lower="-0.52358"
       upper="0.52358"
