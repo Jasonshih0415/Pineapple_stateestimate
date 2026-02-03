@@ -20,10 +20,11 @@ from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import Lo
 ##
 # Pre-defined configs
 ##
-from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V1_CFG  # isort: skip
+from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V2_CFG  # isort: skip
 
 LEG_JOINT_NAMES = ["L_hip_joint", "L_thigh_joint", "L_calf_joint", "R_hip_joint", "R_thigh_joint", "R_calf_joint"]
 WHEEL_JOINT_NAMES = ["L_wheel_joint", "R_wheel_joint"]
+
 BASE_LINK_NAME = "base_link"
 FOOT_LINK_NAME = ".*_wheel"
 
@@ -66,7 +67,7 @@ class PineappleCommandsCfg:
         heading_command=False,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-2.0, 2.0)
         ),
     )
 
@@ -110,9 +111,11 @@ class PineappleObservationsCfg:
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
-            self.enable_corruption = False
+            self.enable_corruption = True
             self.concatenate_terms = True
-
+            self.history_length = 6
+            self.flatten_history_dim = True
+            
     @configclass
     class CriticCfg(ObsGroup):
         """Observations for policy group."""
@@ -247,7 +250,7 @@ class PineappleRewardsCfg:
     )
 
     # -- penalties
-    # is_terminated = RewardTermCfg(func=mdp.is_terminated, weight=-200.0)
+    # is_terminated = RewardTermCfg(func=mdp.is_terminated, weight=-500.0)
     action_smoothness = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
     action_smoothness_2 = RewardTermCfg(
         func=pineapple_mdp.action_smoothness, 
@@ -262,7 +265,7 @@ class PineappleRewardsCfg:
     base_height = RewardTermCfg(
         func=mdp.base_height_l2, 
         weight=-20.0, 
-        params={"asset_cfg": SceneEntityCfg("robot"), "target_height": 0.2}
+        params={"asset_cfg": SceneEntityCfg("robot"), "target_height": 0.3}
     )
     joint_acc = RewardTermCfg(
         func=mdp.joint_acc_l2,
@@ -314,18 +317,6 @@ class PineappleRewardsCfg:
         weight=-10.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
     )
-
-    # joint_vel_limit = RewardTermCfg(
-    #     func=mdp.joint_vel_limits,
-    #     weight=-10.0,
-    #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES), "soft_ratio":0.9},
-    # )
-
-    # joint_vel_limit_wheel = RewardTermCfg(
-    #     func=mdp.joint_vel_limits,
-    #     weight=-10.0,
-    #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINT_NAMES), "soft_ratio":0.8},
-    # )
     undesired_contacts = RewardTermCfg(
         func=mdp.undesired_contacts,
         weight=-10.0,
@@ -394,7 +385,7 @@ class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
         self.decimation = 4  # 50 Hz
         self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 0.005  # 500 Hz
+        self.sim.dt = 0.005  # 200 Hz
         self.sim.render_interval = self.decimation
         self.sim.physics_material.static_friction = 1.0
         self.sim.physics_material.dynamic_friction = 1.0
@@ -405,7 +396,7 @@ class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
         self.scene.contact_forces.update_period = self.sim.dt
 
         # switch robot to Pineapple
-        self.scene.robot = PINEAPPLE_V1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = PINEAPPLE_V2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # terrain
         self.scene.terrain = TerrainImporterCfg(
@@ -444,6 +435,9 @@ class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()
+        # set velocity command ranges for play
+        # self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.0)
+        # self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
 
         # make a smaller scene for play
         self.scene.num_envs = 50
