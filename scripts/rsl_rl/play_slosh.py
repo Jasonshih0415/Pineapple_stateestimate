@@ -203,12 +203,12 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     print(f"  - root_ang_acc_w: {has_ang_acc_w}")
     print(f"[INFO] Inspecting asset data for '{robot_cfg.name}':")
     # Get all attributes that don't start with _
-    all_attrs = [attr for attr in dir(robot_asset.data) if not attr.startswith("_")]
-    print(f"Available attributes in asset.data: {all_attrs}")
+    # all_attrs = [attr for attr in dir(robot_asset.data) if not attr.startswith("_")]
+    # print(f"Available attributes in asset.data: {all_attrs}")
     
     if not (has_lin_acc and (has_ang_acc_b or has_ang_acc_w)):
         print("  -> Will use finite difference calculation in slosh_free.")
-    print(robot_asset.data.body_lin_acc_w.shape)
+    # print(robot_asset.data.body_lin_acc_w.shape)
 
     # simulate environment
     while simulation_app.is_running():
@@ -239,7 +239,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 )
                 robot_asset = env.unwrapped.scene[robot_cfg.name]
         
-                print(robot_asset.data.body_com_pos_w[:,1,:] == robot_asset.data.root_com_pos_w)
+                # print(robot_asset.data.body_com_pos_w[:,1,:] == robot_asset.data.root_com_pos_w)
                 # Append to buffers (CPU numpy)
                 # Take first env only for simplicity if multiple envs
                 recorded_steps.append(timestep)

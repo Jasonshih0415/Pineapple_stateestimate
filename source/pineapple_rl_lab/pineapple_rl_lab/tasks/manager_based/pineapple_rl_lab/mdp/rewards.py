@@ -171,11 +171,11 @@ def slosh_free(
         lin_acc_w = asset.data.body_lin_acc_w[:,0,:]
         
         if has_direct_ang_acc_b:
-             ang_acc_b = asset.data.body_ancc_b[:,0:]
+             ang_acc_b = asset.data.body_ancc_b[:,0,:]
         else:
              # Transform world angular acceleration to body frame
              # alpha_b = R^T * alpha_w
-             ang_acc_w = asset.data.body_ang_acc_w[:,0:]
+             ang_acc_w = asset.data.body_ang_acc_w[:,0,:]
              # R is (Batch, 3, 3). ang_acc_w is (Batch, 3).
              # R^T is transpose of last two dims.
              # batch matmul: R^T @ ang_acc_w
