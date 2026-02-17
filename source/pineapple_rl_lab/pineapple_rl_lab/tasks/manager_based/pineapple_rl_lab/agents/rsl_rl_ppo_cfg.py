@@ -37,3 +37,15 @@ class PineappleFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
+
+
+@configclass
+class PineappleFlatV0PPORunnerCfg(PineappleFlatPPORunnerCfg):
+    experiment_name = "pineapple_flat_v0"
+
+@configclass
+class PineappleFlatV1PPORunnerCfg(PineappleFlatPPORunnerCfg):
+    experiment_name = "pineapple_flat_v1"
+@configclass
+class PineappleFlatV2PPORunnerCfg(PineappleFlatPPORunnerCfg):
+    experiment_name = "pineapple_flat_v2"

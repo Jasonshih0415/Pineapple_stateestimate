@@ -10,7 +10,7 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 - `Isolation` Work outside the core Isaac Lab repository, ensuring that your development efforts remain self-contained.
 - `Flexibility` This project is set up to allow your code to be run as an extension in Omniverse.
 
-**Keywords:** extension, template, pineapple, isaaclab
+**Keywords:** extension, template, pineapple, isaaclab, mujoco
 
 ## Project Structure
 
@@ -23,13 +23,23 @@ source/pineapple_rl_lab/pineapple_rl_lab/
 │   │   └── cslrobotics.py              # Robot Configurations (spawn settings, actuators)
 │   └── data/Robots/csl/                # Robot Assets (URDFs, meshes)
 │       ├── pineapplev0_description/    # v0 Model
-│       └── pineapple/                  # v1 Model
+│       ├── pineapple/                  # v1 Model
+│       └── pineapple_v2/               # v2 Model
 └── tasks/manager_based/pineapple_rl_lab/
     ├── agents/
     │   └── rsl_rl_ppo_cfg.py           # RL Agent Configuration (PPO hyperparameters)
     ├── __init__.py # Environment registration
     ├── pineapple_rl_lab_env_cfg_v0.py  # Environment Configuration for v0
-    └──pineapple_rl_lab_env_cfg_v1.py  # Environment Configuration for v1
+    ├── pineapple_rl_lab_env_cfg_v1.py  # Environment Configuration for v1
+    └── pineapple_rl_lab_env_cfg_v2.py  # Environment Configuration for v2
+
+scripts/sim2sim/
+├── config/
+│   ├── pineapple_v0.yaml               # Sim2Sim Config for v0
+│   ├── pineapple_v1.yaml               # Sim2Sim Config for v1
+│   └── pineapple_v2.yaml               # Sim2Sim Config for v2
+├── gui_teleop.py                       # Teleoperation GUI
+└── mujoco_rl.py                        # Mujoco Simulation Script
 ```
 
 ## Installation
@@ -39,11 +49,20 @@ source/pineapple_rl_lab/pineapple_rl_lab/
     
     Note: Code tested with `IsaacSim 5.1` and `IsaacLab 2.3.0`
 
-- Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
-
-- Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
+- Clone this repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
 
     ```bash
+    git clone https://github.com/csl-robotics/pineapple_rl_isaaclab.git
+    ```
+
+- Using a python interpreter that has Isaac Lab installed, install the library in editable mode.
+  **Important**: Make sure to activate your Isaac Lab environment first (e.g., `conda activate isaaclab` or similar).
+
+    ```bash
+    # Activate your conda environment (if applicable)
+    conda activate isaaclab
+
+    # Install the package in editable mode
     # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
     python -m pip install -e source/pineapple_rl_lab
     ```
@@ -59,26 +78,31 @@ source/pineapple_rl_lab/pineapple_rl_lab/
     - Running a task:
 
         ```bash
-        python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v0 
-        ```
-- Train and replay policies:
-    - Train a policy:
-
-        ```bash
-        python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v0 --headless
-        ```
-    - Replay a policy:
-
-        ```bash
-        python scripts/rsl_rl/play.py --task=Template-Pineapple-Rl-Lab-Play-v0
-        ```
-    - Look for training logs:
-
-        ```bash
-        tensorboard --logdir <to/your/log/folder>
+        python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v2
         ```
 
+- Install sim-to-sim libraries (optional):
 
+    ```bash
+    pip install mujoco
+    ```
+
+## Train and replay policies:
+- Train a policy:
+
+    ```bash
+    python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v2 --headless
+    ```
+- Replay a policy:
+
+    ```bash
+    python scripts/rsl_rl/play.py --task=Template-Pineapple-Rl-Lab-Play-v2
+    ```
+- Look for training logs:
+
+    ```bash
+    tensorboard --logdir <to/your/log/folder>
+    ```
 
 ## Available Tasks
 
@@ -88,8 +112,46 @@ The following tasks are available for the Pineapple robot. Each task corresponds
 | :--- | :--- |
 | `Template-Pineapple-Rl-Lab-v0` | Velocity tracking locomotion for Pineapple v0 on flat terrain. |
 | `Template-Pineapple-Rl-Lab-v1` | Velocity tracking locomotion for Pineapple v1 on flat terrain. |
+| `Template-Pineapple-Rl-Lab-v2` | Velocity tracking locomotion for Pineapple v2 on flat terrain. |
 | `Template-Pineapple-Rl-Lab-Play-v0` | Play/Evaluation environment for Pineapple v0. |
 | `Template-Pineapple-Rl-Lab-Play-v1` | Play/Evaluation environment for Pineapple v1. |
+| `Template-Pineapple-Rl-Lab-Play-v2` | Play/Evaluation environment for Pineapple v2. |
+
+## Sim2Sim
+
+We provide a script to verify the trained policy in Mujoco. This serves as a sim2sim verification.
+
+### Requirements
+
+To run the sim2sim script, you need to install the following dependencies:
+
+```bash
+pip install mujoco opencv-python matplotlib pyyaml
+```
+
+### Configuration
+
+Before running the simulation, you need to update the configuration file (e.g., `scripts/sim2sim/config/pineapple_v2.yaml`) to point to your trained policy and align with your training parameters.
+1.  Locate your trained policy file (`.pt`) in the `logs/` directory.
+2.  Open the corresponding `.yaml` config file.
+3.  Update the `policy_path` parameter:
+
+    ```yaml
+    policy_path: "logs/rsl_rl/pineapple_flat/2026-01-23_15-13-56/exported/policy.pt" # Example path
+    ```
+4. Setup other parameters (e.g., `Kp`, `Kd`, `default_angles`).
+### Usage
+
+Run the following command to start the Mujoco simulation with the trained policy:
+
+```bash
+# Running under project root directory
+# For Pineapple v2
+python scripts/sim2sim/mujoco_rl.py scripts/sim2sim/config/pineapple_v2.yaml
+```
+The script will open a GUI for teleoperation and a Mujoco viewer.
+- The **Control Panel** allows you to send velocity commands to the robot.
+- The **Mujoco Viewer** shows the robot in the simulation.
 
 
 ### Set up IDE (Optional)
