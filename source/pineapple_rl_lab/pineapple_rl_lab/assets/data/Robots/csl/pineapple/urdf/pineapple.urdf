@@ -3,7 +3,7 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="pineapple">
+  name="pineapple_v1">
   <mujoco>
     <compiler
       meshdir="../meshes"
@@ -19,12 +19,12 @@
       <mass
         value="3.63" />
       <inertia
-        ixx="0.00910386"
-        ixy="0.00014120"
-        ixz="0.01026247"
-        iyy="0.02273349"
-        iyz="0.00001086"
-        izz="0.01608900" />
+        ixx="0.010715"
+        ixy="0.000000"
+        ixz="0.000000"
+        iyy="0.010702"
+        iyz="0.000000"
+        izz="0.014614" />
     </inertial>
     <visual>
       <origin
@@ -50,6 +50,50 @@
       </geometry>
     </collision>
   </link>
+  <link
+    name="cam">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.3" />
+      <inertia
+        ixx="0.00018085"
+        ixy="0.00000269"
+        ixz="0.00000005"
+        iyy="0.00002720"
+        iyz="-0.0000001"
+        izz="0.00018280" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../meshes/cam.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+  <joint
+    name="cam_joint"
+    type="fixed">
+    <origin 
+      xyz="0.136663127592924 0 0.125539913353642"
+      rpy="0 0.698131700797732 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="cam" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
   <link
     name="L_hip">
     <inertial>
@@ -95,12 +139,12 @@
       xyz="1 0 0" />
     <limit
       lower="-0.52358"
-      upper="0.52358"
+      upper="0.17444"
       effort="23.7"
       velocity="30.1" />
   </joint>
   <link
-    name="L_thgih">
+    name="L_thigh">
     <inertial>
       <origin
         xyz="-0.00110375 0.00813971 -0.13399155"
@@ -121,7 +165,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="../meshes/L_thgih.STL" />
+          filename="../meshes/L_thigh.STL" />
       </geometry>
       <material
         name="">
@@ -135,7 +179,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="../meshes/L_thgih_collision.STL" />
+          filename="../meshes/L_thigh_collision.STL" />
       </geometry>
     </collision>
   </link>
@@ -148,7 +192,7 @@
     <parent
       link="L_hip" />
     <child
-      link="L_thgih" />
+      link="L_thigh" />
     <axis
       xyz="0 1 0" />
     <limit
@@ -161,24 +205,17 @@
     name="L_calf">
     <inertial>
       <origin
-        xyz="-0.00026693 0.00971427 -0.10"
+        xyz="-0.00026693 0.00971427 -0.08035277"
         rpy="0 0 0" />
       <mass
         value="0.567" />
       <inertia
-        ixx="0.004689"
+        ixx="0.002344"
         ixy="0.000000"
-        ixz="-0.000004"
-        iyy="0.004713"
-        iyz="0.000252"
+        ixz="0.000000"
+        iyy="0.002356"
+        iyz="0.000000"
         izz="0.000158" />
-      <!-- <inertia
-        ixx="0.00024034"
-        ixy="-0.00000147"
-        ixz="0.00000406"
-        iyy="0.00032117"
-        iyz="-0.00002942"
-        izz="0.00029464" /> -->
     </inertial>
     <visual>
       <origin
@@ -211,7 +248,7 @@
       xyz="0 0.04135 -0.165"
       rpy="0 0 0" />
     <parent
-      link="L_thgih" />
+      link="L_thigh" />
     <child
       link="L_calf" />
     <axis
@@ -272,10 +309,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-999999"
-      upper="999999"
       effort="3.69"
-      velocity="60" />
+      velocity="60.0" />
   </joint>
   <link
     name="R_hip">
@@ -321,7 +356,7 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.52358"
+      lower="-0.17444"
       upper="0.52358"
       effort="23.7"
       velocity="30.1" />
@@ -388,24 +423,17 @@
     name="R_calf">
     <inertial>
       <origin
-        xyz="-0.00026693 -0.00971427 -0.10"
+        xyz="-0.00026693 -0.00971427 -0.08035277"
         rpy="0 0 0" />
       <mass
         value="0.567" />
       <inertia
-        ixx="0.004682"
+        ixx="0.002344"
         ixy="0.000000"
-        ixz="-0.000004"
-        iyy="0.004707"
-        iyz="-0.000251"
+        ixz="0.000000"
+        iyy="0.002356"
+        iyz="0.000000"
         izz="0.000158" />
-      <!-- <inertia
-        ixx="0.00024034"
-        ixy="0.00000147"
-        ixz="0.00000406"
-        iyy="0.00032117"
-        iyz="0.00002942"
-        izz="0.00029464" /> -->
     </inertial>
     <visual>
       <origin
@@ -499,9 +527,7 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-999999"
-      upper="999999"
       effort="3.69"
-      velocity="60" />
+      velocity="60.0" />
   </joint>
 </robot>

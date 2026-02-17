@@ -1,8 +1,10 @@
 <mujoco model="pineapple">
   <compiler angle="radian" meshdir="meshes"/>
+  <option cone="elliptic" impratio="100"/>
+  <option gravity='0 0 -9.81' iterations='50' solver='Newton' timestep='0.002'/>
 
   <default>
-      <default class="pinapple">
+      <default class="pineapple">
           <geom friction="0.4" margin="0.001" condim="1"/>
           <joint damping="0.1" armature="0.01" frictionloss="0.2"/>
           <motor ctrlrange="-23.7 23.7"/>
@@ -40,8 +42,8 @@
     <mesh name="base_link_collision" file="base_link_collision.STL"/>
     <mesh name="cam" file="cam.STL"/>
     <mesh name="L_hip" file="L_hip.STL"/>
-    <mesh name="L_thgih" file="L_thgih.STL"/>
-    <mesh name="L_thgih_collision" file="L_thgih_collision.STL"/>
+    <mesh name="L_thigh" file="L_thigh.STL"/>
+    <mesh name="L_thigh_collision" file="L_thigh_collision.STL"/>
     <mesh name="L_calf" file="L_calf.STL"/>
     <mesh name="L_calf_collision" file="L_calf_collision.STL"/>
     <mesh name="L_wheel" file="L_wheel.STL"/>
@@ -54,8 +56,8 @@
   </asset>
 
   <worldbody>
-  <body name="base_link" pos="0 0 0.5" childclass="pinapple">
-      <inertial pos="-0.01551464 0.00128628 0.04323478" quat="1 0 0 0" mass="3.64" diaginertia="0.01979765 0.01183585 0.00863159" />
+  <body name="base_link" pos="0 0 0" childclass="pineapple">
+      <inertial pos="0.01340244 0.00045247 0.07248523" quat="1 0 0 0" mass="3.63" diaginertia="0.010715 0.010702 0.014614" />
       <freejoint />
       <site name="imu" pos="0 0 0" />
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
@@ -68,19 +70,19 @@
         <inertial pos="0.00254635 -0.00198794 0.0005042" quat="0.50972 0.477764 0.507199 0.504654" mass="0.585" diaginertia="0.000767839 0.000505514 0.000454476"/>
         <joint name="L_hip_joint" class="l_hip"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="L_hip"/>
-        <body name="L_thgih" pos="0 0.027596 0">
+        <body name="L_thigh" pos="0 0.027596 0">
           <inertial pos="-0.00110375 0.00813971 -0.133992" quat="0.721556 0.0204552 -0.0151932 0.691887" mass="0.98" diaginertia="0.00423209 0.00379561 0.000652983"/>
           <joint name="L_thigh_joint" class="thigh"/>
-          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="L_thgih"/>
-          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="L_thgih_collision" class='collision'/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="L_thigh"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="L_thigh_collision" class='collision'/>
           <body name="L_calf" pos="0 0.04135 -0.165">
-            <inertial pos="-0.00026693 0.00971427 -0.170353" quat="0.597929 0.353944 0.643991 0.320126" mass="0.567" diaginertia="0.000340296 0.000275824 0.00024003"/>
+            <inertial pos="-0.00026693 0.00971427 -0.080353" quat="0.721556 0.0204552 -0.0151932 0.691887" mass="0.567" diaginertia="0.002344 0.002356 0.000158"/>
             <joint name="L_calf_joint" class="calf"/>
             <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="L_calf"/>
             <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="L_calf_collision" class='collision'/>
             <body name="L_wheel" pos="0 0.024414 -0.165">
               <inertial pos="0 0.00106336 0" quat="0.642722 0.294611 0.294822 0.642801" mass="0.3" diaginertia="0.0009102 0.000467826 0.000467624"/>
-              <joint name="L_wheel_joint" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-3.69 3.69" damping="0.004" armature="0.006" stiffness="0" frictionloss="0.05"/>
+              <joint name="L_wheel_joint" pos="0 0 0" axis="0 1 0"/>
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.470588 0.470588 0.470588 1" mesh="L_wheel"/>
               <geom size="0.075 0.0115" quat="0.707105 0.707108 0 0" type="cylinder" rgba="0.470588 0.470588 0.470588 1" class='collision'/>
             </body>
@@ -97,13 +99,13 @@
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="R_thigh"/>
           <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="R_thigh_collision" class='collision'/>
           <body name="R_calf" pos="0 -0.04135 -0.165">
-            <inertial pos="-0.00026693 -0.00971427 -0.170353" quat="0.320126 0.643991 0.353944 0.597929" mass="0.567" diaginertia="0.000340296 0.000275824 0.00024003"/>
+            <inertial pos="-0.00026693 -0.00971427 -0.080353" quat="0.69275 -0.0171104 0.0188496 0.720729" mass="0.567" diaginertia="0.002344 0.002356 0.000158"/>
             <joint name="R_calf_joint" class="calf"/>
             <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="R_calf"/>
             <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="R_calf_collision" class='collision'/>
             <body name="R_wheel" pos="0 -0.024414 -0.165">
               <inertial pos="0 -0.00106336 0" quat="0.642722 0.294611 0.294822 0.642801" mass="0.3" diaginertia="0.0009102 0.000467826 0.000467624"/>
-              <joint name="R_wheel_joint" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-3.69 3.69" damping="0.004" armature="0.006" stiffness="0" frictionloss="0.05"/>
+              <joint name="R_wheel_joint" pos="0 0 0" axis="0 1 0"/>
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.470588 0.470588 0.470588 1" mesh="R_wheel"/>
               <geom size="0.075 0.0115" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.470588 0.470588 0.470588 1" class='collision'/>
             </body>
