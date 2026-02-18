@@ -98,6 +98,7 @@ def slosh_free(
     use_finite_diff: bool = False,
     internal_state_suffix: str = "",
     return_debug_info: bool = False,
+    min_timestep: int = 0
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Reward based on 'slosh-free' condition: aligning apparent gravity with container's vertical axis.
@@ -258,6 +259,10 @@ def slosh_free(
     dot_prod = torch.sum(b3_C * z_body, dim=1)
     
     reward = 1.0 - dot_prod
+
+    if min_timestep > 0:
+        active = (env.episode_length_buf >= min_timestep).float()
+        reward = reward * active
 
     if return_debug_info:
         return reward, b3_C, z_body, aC

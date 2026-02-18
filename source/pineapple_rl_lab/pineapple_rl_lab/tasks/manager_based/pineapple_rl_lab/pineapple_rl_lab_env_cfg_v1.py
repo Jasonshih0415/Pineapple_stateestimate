@@ -356,6 +356,15 @@ class PineappleRewardsCfg:
         },
     )
 
+    slosh_free = RewardTermCfg(
+        func=mdp.slosh_free,
+        weight=-10.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "min_timestep": 15,
+        },
+    )
+
 
 @configclass
 class PineappleTerminationsCfg:
