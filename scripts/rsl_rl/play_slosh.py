@@ -188,6 +188,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     recorded_steps = []
     recorded_rewards = []
     recorded_accs = []
+    recorded_b3cs = []
+    recorded_zbody = []
 
     robot_cfg = SceneEntityCfg("robot")
     r_offset = [0.0, 0.0, 0.0]
@@ -245,6 +247,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 recorded_steps.append(timestep)
                 recorded_rewards.append(rew[0].cpu().item())
                 recorded_accs.append(ac[0].cpu().numpy())
+                recorded_b3cs.append(b3[0].cpu().numpy())
+                recorded_zbody.append(zb[0].cpu().numpy())
                 
             except Exception as e:
                 print(f"Error computing debug slosh: {e}")
@@ -272,7 +276,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         out_file, 
         steps=np.array(recorded_steps), 
         rewards=np.array(recorded_rewards), 
-        accs=np.array(recorded_accs)
+        accs=np.array(recorded_accs),
+        b3cs=np.array(recorded_b3cs),
+        zbodys=np.array(recorded_zbody) 
     )
     print(f"Recorded data saved to: {os.path.abspath(out_file)}")
 
