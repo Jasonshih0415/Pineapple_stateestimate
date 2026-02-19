@@ -265,6 +265,6 @@ def slosh_free(
         reward = reward * active
 
     if return_debug_info:
-        return reward, b3_C, z_body, aC
+        return reward, b3_C, z_body, quat_w, lin_acc_w, ang_vel_b, ang_acc_b 
     
     return reward

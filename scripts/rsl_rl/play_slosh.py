@@ -184,12 +184,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     obs = env.get_observations()
     timestep = 0
 
+    #quatW, aW, r, omegaB, ang_aB
     # RECORDING BUFFER
     recorded_steps = []
     recorded_rewards = []
     recorded_accs = []
     recorded_b3cs = []
     recorded_zbody = []
+    recorded_quatW = []
+    recorded_aW = []
+    recorded_omegaB = []
+    recorded_ang_aB = []
 
     robot_cfg = SceneEntityCfg("robot")
     r_offset = [0.0, 0.0, 0.0]
@@ -231,7 +236,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             
             try:
                 # Call the shared reward function with debug parameters
-                rew, b3, zb, ac = slosh_free(
+                rew, b3, zb, quatW, aW, omegaB, ang_aB = slosh_free(
                     unwrapped_env, 
                     robot_cfg, 
                     r_offset=r_offset, 
@@ -246,9 +251,14 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 # Take first env only for simplicity if multiple envs
                 recorded_steps.append(timestep)
                 recorded_rewards.append(rew[0].cpu().item())
-                recorded_accs.append(ac[0].cpu().numpy())
+                recorded_accs.append(aW[0].cpu().numpy())
                 recorded_b3cs.append(b3[0].cpu().numpy())
                 recorded_zbody.append(zb[0].cpu().numpy())
+                recorded_quatW.append(quatW[0].cpu().numpy())
+                recorded_aW.append(aW[0].cpu().numpy())
+                recorded_omegaB.append(omegaB[0].cpu().numpy())
+                recorded_ang_aB.append(ang_aB[0].cpu().numpy())
+                
                 
             except Exception as e:
                 print(f"Error computing debug slosh: {e}")
@@ -278,7 +288,11 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         rewards=np.array(recorded_rewards), 
         accs=np.array(recorded_accs),
         b3cs=np.array(recorded_b3cs),
-        zbodys=np.array(recorded_zbody) 
+        zbodys=np.array(recorded_zbody),
+        quatW=np.array(recorded_quatW),
+        aW=np.array(recorded_aW),
+        omegaB=np.array(recorded_omegaB),
+        ang_aB=np.array(recorded_ang_aB)
     )
     print(f"Recorded data saved to: {os.path.abspath(out_file)}")
 
