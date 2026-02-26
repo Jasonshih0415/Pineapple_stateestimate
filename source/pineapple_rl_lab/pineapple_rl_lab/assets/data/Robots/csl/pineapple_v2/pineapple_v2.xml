@@ -1,5 +1,5 @@
 <mujoco model="pineappleV2">
-  <compiler angle="radian" meshdir="meshes"/>
+  <compiler angle="radian" meshdir="meshes/"/>
 
   <default>
       <default class="pinapplev2">
@@ -55,7 +55,7 @@
 
   <worldbody>
     <body name="base_link" pos="0 0 0.5" childclass="pinapplev2">
-      <inertial pos="-0.0018705 0.0 0.043903" quat="1 0 0 0" mass="1.673" diaginertia="0.00924389 0.01472633 0.02192228" />
+      <inertial pos="0.044769 0.00021 0.063886" quat="1 0 0 0" mass="1.673" diaginertia="0.008145 0.02025 0.0226" />
       <freejoint />
       <site name="imu" pos="0 0 0" />
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.48627 0.48627 0.48627 1" mesh="base_link"/>
@@ -96,12 +96,15 @@
             <geom size="0.026 0.0105" pos="0 0.0135 0" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.43922 0.43922 0.43922 1"/>
             <geom size="0.026 0.0105 0.061" pos="0 0.0135 -0.087" type="box" rgba="0.43922 0.43922 0.43922 1"/>
             <geom size="0.0415 0.0105" pos="0 0.0135 -0.19" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.43922 0.43922 0.43922 1"/>
-            <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.62745 0.62745 0.62745 1" mesh="wheel_motor_L"/>
+            <body name="wheel_motor_L" pos="0 0 0">
+              <inertial pos="8.1392E-05 0.022061 -0.19008" quat="1 0 0 0" mass="0.335" diaginertia="0.00014313 0.00023596 0.00014397" />
+              <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.62745 0.62745 0.62745 1" mesh="wheel_motor_L"/>
+            </body>
             <body name="L_wheel" pos="0 0.0355 -0.19">
-              <inertial pos="-1.5282e-07 0.012142 -1.1774e-07" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.001 0.00051 0.00051"/>
-              <joint name="L_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0"/>
+              <inertial pos="0 0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
+              <joint name="L_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0" />
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.48627 0.48627 0.48627 1" mesh="L_wheel"/>
-              <geom type="cylinder" size="0.077 0.0115" pos="0 0.003 0" quat="0.707107 -0.707107 0 0" class="wheel"/>
+              <geom size="0.077 0.0115" pos="0 0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
             </body>
           </body>
         </body>
@@ -127,10 +130,10 @@
             <geom size="0.0415 0.0105" pos="0 -0.0135 -0.19" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.43922 0.43922 0.43922 1"/>
             <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.62745 0.62745 0.62745 1" mesh="wheel_motor_R"/>
             <body name="R_wheel" pos="0 -0.0355 -0.19">
-              <inertial pos="-6.462e-08 -0.012142 -7.2937e-08" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.001 0.00051 0.00051"/>
+              <inertial pos="0 -0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
               <joint name="R_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0"/>
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.48627 0.48627 0.48627 1" mesh="R_wheel"/>
-              <geom type="cylinder" size="0.077 0.0115" pos="0 -0.003 0" quat="0.707107 -0.707107 0 0" class="wheel"/>
+              <geom size="0.077 0.0115" pos="0 -0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
             </body>
           </body>
         </body>
@@ -192,7 +195,4 @@
       <framelinvel name="frame_lin_vel" objtype="site" objname="imu"/>
       <frameangvel name="frame_ang_vel" objtype="site" objname="imu"/>
   </sensor>
-  <keyframe>
-    <key name="home" qpos="0 0 0.35 1 0 0 0 0 0.879 -1.469 0 0 0.879 -1.469 0"/>
-  </keyframe>
 </mujoco>
