@@ -88,7 +88,7 @@ class PineappleObservationsCfg:
             func=mdp.base_ang_vel, 
             scale=0.25,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.1, n_max=0.1)
+            noise=Unoise(n_min=-0.2, n_max=0.2)
         )
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
@@ -100,13 +100,13 @@ class PineappleObservationsCfg:
             func=mdp.joint_pos_rel, 
             scale=1.0,
             params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)}, 
-            noise=Unoise(n_min=-0.05, n_max=0.05)
+            noise=Unoise(n_min=-0.01, n_max=0.01)
         )
         joint_vel = ObsTerm(
             func=mdp.joint_vel_rel, 
             scale=0.05,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.5, n_max=0.5)
+            noise=Unoise(n_min=-1.5, n_max=1.5)
         )
         actions = ObsTerm(func=mdp.last_action)
 
@@ -176,16 +176,16 @@ class PineappleEventCfg:
         },
     )
 
-    # reset
-    base_external_force_torque = EventTerm(
-        func=mdp.apply_external_force_torque,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
-            "force_range": (0.0, 0.0),
-            "torque_range": (-0.0, 0.0),
-        },
-    )
+    # base_external_force_torque = EventTerm(
+    #     func=mdp.apply_external_force_torque,
+    #     mode="interval",
+    #     interval_range_s=(0.2, 0.5),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
+    #         "force_range": (-1.0, 1.0),
+    #         "torque_range": (-0.5, 0.5),
+    #     },
+    # )
 
     reset_base = EventTerm(
         func=mdp.reset_root_state_uniform,
@@ -237,6 +237,14 @@ class PineappleEventCfg:
             "velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)},
         },
     )
+    randomize_rigid_body_com = EventTerm(
+        func=mdp.randomize_rigid_body_com,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
+            "com_range": {"x": (-0.05, 0.05), "y": (0.01, 0.01), "z": (-0.05, 0.05)},
+        },
+    )
 
 
 @configclass
@@ -279,8 +287,13 @@ class PineappleRewardsCfg:
     )
     joint_pos = RewardTermCfg(
         func=pineapple_mdp.joint_deviation_l1,
-        weight=-1.0,
+        weight=-0.5,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
+    )
+    joint_pos_hip = RewardTermCfg(
+        func=pineapple_mdp.joint_deviation_l1,
+        weight=-0.5,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*_hip_joint")},
     )
     joint_torques = RewardTermCfg(
         func=mdp.joint_torques_l2,

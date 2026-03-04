@@ -1,21 +1,20 @@
 # configuration for mujoco_rl_him
-policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-02-02_14-15-12/exported/policy.pt"
+policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-03-02_23-41-17/exported/policy.pt"
 xml_path: "source/pineapple_rl_lab/pineapple_rl_lab/assets/data/Robots/csl/pineapple_v2/scene.xml"
 
 # Total simulation time
-simulation_duration: 60.0
+simulation_duration: 60
 # Simulation time step
 simulation_dt: 0.005
 # Controller update frequency (meets the requirement of simulation_dt * controll_decimation=0.02; 50Hz)
 control_decimation: 4
-
 # KP, KD gains for the PD controller, order matches xml joint order
 kps: [40, 40, 40, 0, 40, 40, 40,  0]
-kds: [1.0, 1.0, 1.0, 0.3, 1.0, 1.0, 1.0, 0.3]
+kds: [1.0, 1.0, 1.0, 0.30, 1.0, 1.0, 1.0, 0.30]
 
 
 # default_angles, order matches xml joint order
-default_angles: [0.0,  0.879, -1.469, 0.0, 0.0, 0.879, -1.469, 0.0]
+default_angles: [0.0,  0.83, -1.484, 0.0, 0.0, 0.83, -1.484, 0.0]
 
 lin_vel_scale: 2.0
 ang_vel_scale: 0.25

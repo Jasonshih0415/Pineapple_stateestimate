@@ -208,52 +208,54 @@ if __name__ == "__main__":
             # qvel = d.sensordata[6:12]
             # joint_vel_list.append(qvel.copy())
             # action_list.append(target_dof_vel.copy())
+            
+            # create observation
+            qpos = d.sensordata[:num_actions]
+            qvel = d.sensordata[num_actions: 2*num_actions]
+            imu_quat = d.sensordata[3*num_actions:3*num_actions+4]
+            ang_vel_b = d.sensordata[3*num_actions+4:3*num_actions+4+3]
+            
+            lin_vel_I = d.sensordata[3*num_actions+4+3+6:3*num_actions+4+3+6+3]
+
+            if policy_index_map is not None:
+                qpos_obs = qpos[policy_index_map]
+                qvel_obs = qvel[policy_index_map]
+                default_angles_pol = default_angles[policy_index_map]
+            else:
+                qpos_obs = qpos
+                qvel_obs = qvel
+                default_angles_pol = default_angles
+
+            current_cmd_vel = np.array(teleop.get_command(), dtype=np.float32)
+
+            lin_vel_b = quat_rotate_inverse(imu_quat, lin_vel_I)
+            gravity_b = get_gravity_orientation(imu_quat)
+
+            # SAFE leg joint delta (1D)
+            valid_leg_idx = [i for i in leg_joint_indices if i < len(qpos_obs) and i < len(default_angles_pol)]
+            leg_pos_delta = (qpos_obs[valid_leg_idx] - default_angles_pol[valid_leg_idx]) * dof_pos_scale
+            leg_pos_delta = leg_pos_delta.astype(np.float32).ravel()
+            
+            obs_list = [
+                ang_vel_b * ang_vel_scale,
+                gravity_b,
+                current_cmd_vel * cmd_scale,
+                leg_pos_delta,
+                qvel_obs * dof_vel_scale,
+                action.astype(np.float32)
+            ]
+            ## Record Data ##
+            lin_vel_data_list.append(lin_vel_b.copy())
+            ang_vel_data_list.append(ang_vel_b.copy())
+            gravity_b_list.append(gravity_b)
+            joint_vel_list.append(qvel_obs.copy()) 
+            action_list.append(action * vel_action_scale)
+            time_list.append(counter * simulation_dt)
+            cmd_list.append(current_cmd_vel.copy()) 
+            ###
+
             if counter % control_decimation == 0 and counter > 0:
 
-                # create observation
-                qpos = d.sensordata[:num_actions]
-                qvel = d.sensordata[num_actions: 2*num_actions]
-                imu_quat = d.sensordata[3*num_actions:3*num_actions+4]
-                ang_vel_b = d.sensordata[3*num_actions+4:3*num_actions+4+3]
-                
-                lin_vel_I = d.sensordata[3*num_actions+4+3+6:3*num_actions+4+3+6+3]
-
-                if policy_index_map is not None:
-                    qpos_obs = qpos[policy_index_map]
-                    qvel_obs = qvel[policy_index_map]
-                    default_angles_pol = default_angles[policy_index_map]
-                else:
-                    qpos_obs = qpos
-                    qvel_obs = qvel
-                    default_angles_pol = default_angles
-
-                current_cmd_vel = np.array(teleop.get_command(), dtype=np.float32)
-
-                lin_vel_b = quat_rotate_inverse(imu_quat, lin_vel_I)
-                gravity_b = get_gravity_orientation(imu_quat)
-
-                # SAFE leg joint delta (1D)
-                valid_leg_idx = [i for i in leg_joint_indices if i < len(qpos_obs) and i < len(default_angles_pol)]
-                leg_pos_delta = (qpos_obs[valid_leg_idx] - default_angles_pol[valid_leg_idx]) * dof_pos_scale
-                leg_pos_delta = leg_pos_delta.astype(np.float32).ravel()
-                
-                obs_list = [
-                    ang_vel_b * ang_vel_scale,
-                    gravity_b,
-                    current_cmd_vel * cmd_scale,
-                    leg_pos_delta,
-                    qvel_obs * dof_vel_scale,
-                    action.astype(np.float32)
-                ]
-                ## Record Data ##
-                lin_vel_data_list.append(lin_vel_b.copy())
-                ang_vel_data_list.append(ang_vel_b.copy())
-                gravity_b_list.append(gravity_b)
-                joint_vel_list.append(qvel_obs.copy()) 
-                action_list.append(action * vel_action_scale)
-                time_list.append(counter * simulation_dt)
-                cmd_list.append(current_cmd_vel.copy()) 
-                ###
                 obs_list = [torch.tensor(obs, dtype=torch.float32) if isinstance(obs, np.ndarray) else obs for obs in obs_list]
 
                 current_obs = torch.cat(obs_list, dim=0)
