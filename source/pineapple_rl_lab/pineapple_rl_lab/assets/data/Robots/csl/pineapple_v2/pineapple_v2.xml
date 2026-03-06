@@ -1,5 +1,5 @@
 <mujoco model="pineappleV2">
-  <compiler angle="radian" meshdir="meshes"/>
+  <compiler angle="radian" meshdir="meshes/"/>
 
   <default>
       <default class="pinapplev2">
@@ -101,7 +101,10 @@
             <body name="L_wheel" pos="0 0.0355 -0.19">
               <inertial pos="0 0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
               <joint name="L_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0" />
+              <inertial pos="0 0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
+              <joint name="L_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0" />
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.48627 0.48627 0.48627 1" mesh="L_wheel"/>
+              <geom size="0.077 0.0115" pos="0 0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
               <geom size="0.077 0.0115" pos="0 0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
             </body>
           </body>
@@ -129,8 +132,10 @@
             <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.62745 0.62745 0.62745 1" mesh="wheel_motor_R"/>
             <body name="R_wheel" pos="0 -0.0355 -0.19">
               <inertial pos="0 -0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
+              <inertial pos="0 -0.008 0" quat="0.707107 0 0 0.707107" mass="0.405" diaginertia="0.00143168 0.00073779 0.00073779"/>
               <joint name="R_wheel_joint" class="wheel" pos="0 0 0" axis="0 1 0"/>
               <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.48627 0.48627 0.48627 1" mesh="R_wheel"/>
+              <geom size="0.077 0.0115" pos="0 -0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
               <geom size="0.077 0.0115" pos="0 -0.003 0" quat="0.707105 -0.707108 0 0" type="cylinder" rgba="0.48627 0.48627 0.48627 1" class="wheel"/>
             </body>
           </body>

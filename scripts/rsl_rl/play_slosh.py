@@ -9,6 +9,8 @@
 
 import argparse
 import sys
+import numpy as np
+import torch
 
 from isaaclab.app import AppLauncher
 
@@ -34,6 +36,8 @@ parser.add_argument(
     help="Use the pre-trained checkpoint from Nucleus.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--num_steps", type=int, default=2000, help="Number of steps to play. Set to -1 for infinite (until stopped).")
+
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -70,6 +74,7 @@ from isaaclab.envs import (
 from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
 from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+from isaaclab.managers import SceneEntityCfg
 
 from isaaclab_rl.rsl_rl import RslRlBaseRunnerCfg, RslRlVecEnvWrapper, export_policy_as_jit, export_policy_as_onnx
 
@@ -79,6 +84,7 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import pineapple_rl_lab.tasks  # noqa: F401
 
+from pineapple_rl_lab.tasks.manager_based.pineapple_rl_lab.mdp import slosh_free
 
 @hydra_task_config(args_cli.task, args_cli.agent)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: RslRlBaseRunnerCfg):
@@ -177,6 +183,40 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # reset environment
     obs = env.get_observations()
     timestep = 0
+
+    #quatW, aW, r, omegaB, ang_aB
+    # RECORDING BUFFER
+    recorded_steps = []
+    recorded_rewards = []
+    recorded_accs = []
+    recorded_b3cs = []
+    recorded_zbody = []
+    recorded_quatW = []
+    recorded_aW = []
+    recorded_omegaB = []
+    recorded_ang_aB = []
+
+    robot_cfg = SceneEntityCfg("robot")
+    r_offset = [0.0, 0.0, 0.0]
+
+    # Check for direct acceleration access
+    robot_asset = env.unwrapped.scene[robot_cfg.name]
+    has_lin_acc = hasattr(robot_asset.data, "body_lin_acc_w")
+    has_ang_acc_b = hasattr(robot_asset.data, "body_ang_acc_b")
+    has_ang_acc_w = hasattr(robot_asset.data, "body_ang_acc_w")
+    print(f"[INFO] Robot asset '{robot_cfg.name}' acceleration availability:")
+    print(f"  - root_lin_acc_w: {has_lin_acc}")
+    print(f"  - root_ang_acc_b: {has_ang_acc_b}")
+    print(f"  - root_ang_acc_w: {has_ang_acc_w}")
+    print(f"[INFO] Inspecting asset data for '{robot_cfg.name}':")
+    # Get all attributes that don't start with _
+    # all_attrs = [attr for attr in dir(robot_asset.data) if not attr.startswith("_")]
+    # print(f"Available attributes in asset.data: {all_attrs}")
+    
+    if not (has_lin_acc and (has_ang_acc_b or has_ang_acc_w)):
+        print("  -> Will use finite difference calculation in slosh_free.")
+    # print(robot_asset.data.body_lin_acc_w.shape)
+
     # simulate environment
     while simulation_app.is_running():
         start_time = time.time()
@@ -188,6 +228,41 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             obs, _, dones, _ = env.step(actions)
             # reset recurrent states for episodes that have terminated
             policy_nn.reset(dones)
+
+            unwrapped_env = env.unwrapped
+            # But earlier it was wrapped in RslRlVecEnvWrapper, then possibly VideoRecorder, then gym.make returns wrapper...
+            # We need to dig to ManagerBasedRLEnv.
+            # Usually env.unwrapped gives the base.
+            
+            try:
+                # Call the shared reward function with debug parameters
+                rew, b3, zb, quatW, aW, omegaB, ang_aB = slosh_free(
+                    unwrapped_env, 
+                    robot_cfg, 
+                    r_offset=r_offset, 
+                    use_finite_diff=False,
+                    internal_state_suffix="_debug",
+                    return_debug_info=True
+                )
+                robot_asset = env.unwrapped.scene[robot_cfg.name]
+        
+                # print(robot_asset.data.body_com_pos_w[:,1,:] == robot_asset.data.root_com_pos_w)
+                # Append to buffers (CPU numpy)
+                # Take first env only for simplicity if multiple envs
+                recorded_steps.append(timestep)
+                recorded_rewards.append(rew[0].cpu().item())
+                recorded_accs.append(aW[0].cpu().numpy())
+                recorded_b3cs.append(b3[0].cpu().numpy())
+                recorded_zbody.append(zb[0].cpu().numpy())
+                recorded_quatW.append(quatW[0].cpu().numpy())
+                recorded_aW.append(aW[0].cpu().numpy())
+                recorded_omegaB.append(omegaB[0].cpu().numpy())
+                recorded_ang_aB.append(ang_aB[0].cpu().numpy())
+                
+                
+            except Exception as e:
+                print(f"Error computing debug slosh: {e}")
+
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video
@@ -198,9 +273,28 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         sleep_time = dt - (time.time() - start_time)
         if args_cli.real_time and sleep_time > 0:
             time.sleep(sleep_time)
+        else:
+            timestep += 1
+            if args_cli.num_steps > 0 and timestep >= args_cli.num_steps:
+                break
 
     # close the simulator
     env.close()
+    # Save Data
+    out_file = "slosh_data.npz"
+    np.savez(
+        out_file, 
+        steps=np.array(recorded_steps), 
+        rewards=np.array(recorded_rewards), 
+        accs=np.array(recorded_accs),
+        b3cs=np.array(recorded_b3cs),
+        zbodys=np.array(recorded_zbody),
+        quatW=np.array(recorded_quatW),
+        aW=np.array(recorded_aW),
+        omegaB=np.array(recorded_omegaB),
+        ang_aB=np.array(recorded_ang_aB)
+    )
+    print(f"Recorded data saved to: {os.path.abspath(out_file)}")
 
 
 if __name__ == "__main__":
