@@ -268,3 +268,26 @@ def slosh_free(
         return reward, b3_C, z_body, quat_w, lin_acc_w, ang_vel_b, ang_acc_b 
     
     return reward
+
+
+def track_base_height_exp(
+    env: ManagerBasedRLEnv, 
+    std: float,
+    target_height: float | None = None,
+    command_name: str | None = None,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward tracking base height using exponential kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    
+    if target_height is not None:
+        target = torch.tensor(target_height, device=env.device)
+    elif command_name is not None: 
+         target = env.command_manager.get_command(command_name)[:, 0]
+    else:
+        raise ValueError("Either 'target_height' or 'command_name' must be provided.")
+    
+    error = torch.square(asset.data.root_pos_w[:, 2] - target)
+    return torch.exp(-error / std**2)
+

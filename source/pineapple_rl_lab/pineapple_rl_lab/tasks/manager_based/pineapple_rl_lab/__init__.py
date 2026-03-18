@@ -53,7 +53,7 @@ gym.register(
     },
 )
 
-## pineapple v2 robot
+## pineapple v2 robot - x linear velocity command + z angular velocity command, no height command
 gym.register(
     id="Template-Pineapple-Rl-Lab-v2",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
@@ -70,6 +70,27 @@ gym.register(
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg_v2:PineappleFlatEnvCfgV2_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PineappleFlatV2PPORunnerCfg",
+    },
+)
+
+## pineapple v2 robot - x linear velocity command + z angular velocity command + height command
+gym.register(
+    id="Template-Pineapple-Rl-Lab-v2.1",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg_v2_1:PineappleFlatEnvCfgV2",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PineappleFlatV2PPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Template-Pineapple-Rl-Lab-Play-v2.1",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.pineapple_rl_lab_env_cfg_v2_1:PineappleFlatEnvCfgV2_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PineappleFlatV2PPORunnerCfg",
     },
 )

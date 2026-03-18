@@ -111,7 +111,6 @@ def velocity_command_curriculum(
     # high_mean_episode_reward = torch.mean(env.reward_manager._episode_sums[reward_term_name][high_vel_env_ids])
 
     global_step = env.common_step_counter
-    print(global_step)
     last_update_step = getattr(env, "_vel_curriculum_last_step", 0)
 
     # Check if the performance threshold is met
