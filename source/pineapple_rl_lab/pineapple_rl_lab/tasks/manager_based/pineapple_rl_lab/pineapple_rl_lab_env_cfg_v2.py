@@ -55,21 +55,36 @@ class PineappleActionsCfg:
     joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=WHEEL_JOINT_NAMES, scale=5.0, use_default_offset=True)
 
 
-@configclass
+@configclass 
 class PineappleCommandsCfg:
     """Command specifications for the MDP."""
 
-    base_velocity = mdp.UniformVelocityCommandCfg(
+    base_velocity = pineapple_mdp.PineappleVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.1,
+        resampling_time_range=(10.0, 15.0),
+        rel_standing_envs=0.3,
         rel_heading_envs=0.0,
         heading_command=False,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-2.0, 2.0)
+            # Calculated based on Wheel Velocity Limit (25.13 rad/s), Radius (0.077m), and Half-Track-Width (~0.205m)
+            # Max Lin Vel = 25.13 * 0.077 = ~1.93 m/s
+            # Max Ang Vel = 1.93 / 0.205 = ~9.4 rad/s
+            lin_vel_x=(-1.9, 1.9), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
         ),
     )
+
+    # base_velocity = mdp.UniformVelocityCommandCfg(
+    #     asset_name="robot",
+    #     resampling_time_range=(10.0, 15.0),
+    #     rel_standing_envs=0.3,
+    #     rel_heading_envs=0.0,
+    #     heading_command=False,
+    #     debug_vis=True,
+    #     ranges=mdp.UniformVelocityCommandCfg.Ranges(
+    #         lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-2.0, 2.0)
+    #     ),
+    # )
 
 
 @configclass
@@ -106,7 +121,7 @@ class PineappleObservationsCfg:
             func=mdp.joint_vel_rel, 
             scale=0.05,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-1.5, n_max=1.5)
+            noise=Unoise(n_min=-0.5, n_max=0.5)
         )
         actions = ObsTerm(func=mdp.last_action)
 
