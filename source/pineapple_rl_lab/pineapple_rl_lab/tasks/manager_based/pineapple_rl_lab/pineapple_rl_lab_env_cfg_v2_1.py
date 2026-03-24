@@ -28,25 +28,6 @@ WHEEL_JOINT_NAMES = ["L_wheel_joint", "R_wheel_joint"]
 BASE_LINK_NAME = "base_link"
 FOOT_LINK_NAME = ".*_wheel"
 
-COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
-    size=(8.0, 8.0),
-    border_width=20.0,
-    num_rows=9,
-    num_cols=21,
-    horizontal_scale=0.1,
-    vertical_scale=0.005,
-    slope_threshold=0.75,
-    difficulty_range=(0.0, 1.0),
-    use_cache=False,
-    sub_terrains={
-        "flat": terrain_gen.MeshPlaneTerrainCfg(proportion=0.2),
-        "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-            proportion=0.2, noise_range=(0.02, 0.05), noise_step=0.02, border_width=0.25
-        ),
-    },
-)
-
-
 @configclass
 class PineappleActionsCfg:
     """Action specifications for the MDP."""
@@ -111,12 +92,12 @@ class PineappleObservationsCfg:
             func=mdp.base_ang_vel, 
             scale=0.25,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.2, n_max=0.2)
+            noise=Unoise(n_min=-0.5, n_max=0.5)
         )
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot")},
-            noise=Unoise(n_min=-0.05, n_max=0.05),
+            noise=Unoise(n_min=-0.1, n_max=0.1),
         )
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
         height_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_height"})
@@ -374,28 +355,6 @@ class PineappleTerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[f"^(?!.*{FOOT_LINK_NAME}).*"]), "threshold": 1.0},
     )
-    terrain_out_of_bounds = DoneTerm(
-        func=mdp.terrain_out_of_bounds,
-        params={"asset_cfg": SceneEntityCfg("robot"), "distance_buffer": 3.0},
-        time_out=True,
-    )
-
-
-@configclass
-class PineappleCurriculumCfg:
-    """Curriculum terms for the MDP."""
-
-    velocity_command = CurriculumTermCfg(
-        func=pineapple_mdp.velocity_command_curriculum,
-        params={
-            "command_name": "base_velocity",
-            "reward_term_name": "base_linear_velocity",
-            "x_vel_range": (-2.0, 2.0),
-            "z_ang_vel_range": (-3.14, 3.14),
-            "reward_threshold_ratio": 0.9,
-            "range_step_size": 0.1,
-        },
-    )
 
 
 @configclass
@@ -437,33 +396,14 @@ class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
         self.scene.robot = PINEAPPLE_V2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # terrain
-        self.scene.terrain = TerrainImporterCfg(
-            prim_path="/World/ground",
-            terrain_type="generator",
-            terrain_generator=COBBLESTONE_ROAD_CFG,
-            max_init_terrain_level=COBBLESTONE_ROAD_CFG.num_rows - 1,
-            collision_group=-1,
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="multiply",
-                restitution_combine_mode="multiply",
-                static_friction=1.0,
-                dynamic_friction=1.0,
-            ),
-            visual_material=sim_utils.MdlFileCfg(
-                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-                project_uvw=True,
-                texture_scale=(0.25, 0.25),
-            ),
-            debug_vis=True,
-        )
         # change terrain to flat
-        # self.scene.terrain.terrain_type = "plane"
-        # self.scene.terrain.terrain_generator = None
+        self.scene.terrain.terrain_type = "plane"
+        self.scene.terrain.terrain_generator = None
         # no height scan
-        # self.scene.height_scanner = None
+        self.scene.height_scanner = None
         # self.observations.policy.height_scan = None
         # no terrain curriculum
-        # self.curriculum.terrain_levels = None
+        self.curriculum.terrain_levels = None
 
         # no height scan
         self.scene.height_scanner = None
