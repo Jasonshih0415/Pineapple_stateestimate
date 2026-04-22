@@ -21,6 +21,8 @@ from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import Lo
 # Pre-defined configs
 ##
 from pineapple_rl_lab.assets.assets.robots.cslrobotics import PINEAPPLE_V2_CFG  # isort: skip
+from pineapple_rl_lab.tasks.manager_based.pineapple_rl_lab.mdp.terrains import CUSTOM_FLAT_TERRAINS_CFG
+
 
 LEG_JOINT_NAMES = ["L_hip_joint", "L_thigh_joint", "L_calf_joint", "R_hip_joint", "R_thigh_joint", "R_calf_joint"]
 WHEEL_JOINT_NAMES = ["L_wheel_joint", "R_wheel_joint"]
@@ -51,14 +53,14 @@ class PineappleCommandsCfg:
             # Calculated based on Wheel Velocity Limit (25.13 rad/s), Radius (0.077m), and Half-Track-Width (~0.205m)
             # Max Lin Vel = 25.13 * 0.077 = ~1.93 m/s
             # Max Ang Vel = 1.93 / 0.205 = ~9.4 rad/s
-            lin_vel_x=(-1.9, 1.9), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
+            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
         ),
     )
 
     base_height = pineapple_mdp.PineappleHeightCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 15.0),
-        ranges=pineapple_mdp.PineappleHeightCommandCfg.Ranges(height=(0.2, 0.35)),
+        ranges=pineapple_mdp.PineappleHeightCommandCfg.Ranges(height=(0.25, 0.35)),
         default_height=0.3,
         rel_default_height_envs=0.3,
     )
@@ -248,7 +250,7 @@ class PineappleEventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
-            "com_range": {"x": (-0.05, 0.05), "y": (0.01, 0.01), "z": (-0.05, 0.05)},
+            "com_range": {"x": (-0.01, 0.01), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
         },
     )
 
@@ -298,7 +300,7 @@ class PineappleRewardsCfg:
     )
     joint_pos_hip = RewardTermCfg(
         func=pineapple_mdp.joint_deviation_l1,
-        weight=-0.5,
+        weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*_hip_joint")},
     )
     joint_torques = RewardTermCfg(
@@ -358,6 +360,22 @@ class PineappleTerminationsCfg:
 
 
 @configclass
+class PineappleCurriculumCfg:
+    """Curriculum terms for the MDP."""
+
+    pace_motor_delay = CurriculumTermCfg(
+        func=pineapple_mdp.pace_motor_delay_curriculum,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "actuator_names": ["hip", "thigh", "calf", "wheel"],
+            "max_delay": 3,
+            # mean episode distance (m) at which delay increments: 0→1, 1→2, 2→3
+            "distance_thresholds": (5.0, 10.0, 15.0),
+        },
+    )
+    terrain_levels = CurriculumTermCfg(func=pineapple_mdp.terrain_levels_vel)
+
+@configclass
 class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
 
     # Basic settings
@@ -369,7 +387,7 @@ class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
     rewards: PineappleRewardsCfg = PineappleRewardsCfg()
     terminations: PineappleTerminationsCfg = PineappleTerminationsCfg()
     events: PineappleEventCfg = PineappleEventCfg()
-    # curriculum: PineappleCurriculumCfg = PineappleCurriculumCfg()
+    curriculum: PineappleCurriculumCfg = PineappleCurriculumCfg()
 
     # Viewer
     # viewer = ViewerCfg(eye=(10.5, 10.5, 0.3), origin_type="world", env_index=0, asset_name="robot")
@@ -399,14 +417,34 @@ class PineappleFlatEnvCfgV2(LocomotionVelocityRoughEnvCfg):
         # change terrain to flat
         self.scene.terrain.terrain_type = "plane"
         self.scene.terrain.terrain_generator = None
-        # no height scan
-        self.scene.height_scanner = None
-        # self.observations.policy.height_scan = None
+        # terrain
+        # self.scene.terrain = TerrainImporterCfg(
+        #     prim_path="/World/ground",
+        #     terrain_type="generator",
+        #     terrain_generator=CUSTOM_FLAT_TERRAINS_CFG,
+        #     max_init_terrain_level=5,
+        #     collision_group=-1,
+        #     physics_material=sim_utils.RigidBodyMaterialCfg(
+        #         friction_combine_mode="multiply",
+        #         restitution_combine_mode="multiply",
+        #         static_friction=1.0,
+        #         dynamic_friction=1.0,
+        #     ),
+        #     visual_material=sim_utils.MdlFileCfg(
+        #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+        #         project_uvw=True,
+        #         texture_scale=(0.25, 0.25),
+        #     ),
+        #     debug_vis=False,
+        # )
+        
         # no terrain curriculum
         self.curriculum.terrain_levels = None
 
         # no height scan
         self.scene.height_scanner = None
+        # self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/" + BASE_LINK_NAME
+        # self.scene.height_scanner.debug_vis = True
 
 
 class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
@@ -414,7 +452,7 @@ class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
         # post init of parent
         super().__post_init__()
         # set velocity command ranges for play
-        # self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.0)
+        # self.commands.base_velocity.ranges.lin_vel_x = (-1.9, -1.9)
         # self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
 
         # make a smaller scene for play
@@ -428,7 +466,11 @@ class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
             self.scene.terrain.terrain_generator.num_rows = 5
             self.scene.terrain.terrain_generator.num_cols = 5
             self.scene.terrain.terrain_generator.curriculum = False
+        
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False
         # remove random pushing event
+
+        # disable delay curriculum; delay stays at max_delay set in robot cfg
+        # self.curriculum.pace_motor_delay = None

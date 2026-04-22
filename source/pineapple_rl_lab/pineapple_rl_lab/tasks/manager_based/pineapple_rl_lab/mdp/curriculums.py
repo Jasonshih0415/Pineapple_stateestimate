@@ -134,3 +134,82 @@ def velocity_command_curriculum(
 
     # Return the current max command range for logging purposes
     return torch.tensor(command_term.cfg.ranges.lin_vel_x[1], device=env.device)
+
+
+def pace_motor_delay_curriculum(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    actuator_names: list[str] | None = None,
+    max_delay: int = 3,
+    distance_thresholds: tuple[float, ...] = (5.0, 10.0, 15.0),
+) -> torch.Tensor:
+    """Curriculum that increases PaceDCMotor action delay from 0 to max_delay based on episode distance.
+
+    At each reset the average distance walked over the just-finished episodes is computed.
+    When that distance crosses successive thresholds the global time-lag of every listed
+    actuator is incremented by one step (up to ``max_delay``).
+
+    .. note::
+        The robot articulation must be initialised with ``max_delay`` equal to the final
+        target value so that the ``DelayBuffer`` is allocated with sufficient capacity.
+        Only the *active* time-lag is changed here, not the buffer size.
+
+    Args:
+        env: The environment instance.
+        env_ids: Environment IDs that are resetting this step.
+        asset_cfg: Scene entity config for the robot articulation.
+        actuator_names: Names of the PaceDCMotor actuators to update.
+                        If ``None``, all actuators on the asset are targeted.
+        max_delay: Maximum time-lag (steps) to ramp up to.
+        distance_thresholds: Distances (m) at which the delay is incremented by 1.
+                             Must have exactly ``max_delay`` entries.
+
+    Returns:
+        Tensor containing the current active delay (for logging).
+    """
+    if len(env_ids) == 0:
+        current_delay = getattr(env, "_pace_motor_current_delay", 0)
+        return torch.tensor(current_delay, dtype=torch.float32, device=env.device)
+
+    if len(distance_thresholds) != max_delay:
+        raise ValueError(
+            f"distance_thresholds must have exactly max_delay={max_delay} entries, "
+            f"got {len(distance_thresholds)}."
+        )
+
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    # Distance walked this episode for each resetting env (same as terrain_levels_vel)
+    distance = torch.norm(
+        asset.data.root_pos_w[env_ids, :2] - env.scene.env_origins[env_ids, :2], dim=1
+    )
+
+    current_max_delay = getattr(env, "_pace_motor_current_delay", 0)
+
+    if current_max_delay < max_delay:
+        next_threshold = distance_thresholds[current_max_delay]
+        # fraction of resetting envs that walked far enough to unlock the next level
+        move_up = (distance > next_threshold).float().mean().item()
+        if move_up > 0.8:
+            current_max_delay += 1
+            setattr(env, "_pace_motor_current_delay", current_max_delay)
+            print(f"[pace_motor_delay_curriculum] max delay -> {current_max_delay} (move_up_frac={move_up:.2f})")
+
+    # Randomize per-env delay in [0, current_max_delay] at every reset
+    all_env_ids = torch.arange(env.num_envs, device=env.device)
+    random_delays = torch.randint(0, current_max_delay + 1, (env.num_envs,), device=env.device).int()
+
+    robot_actuators = asset.actuators
+    targets = actuator_names if actuator_names is not None else list(robot_actuators.keys())
+    for name in targets:
+        if name in robot_actuators:
+            robot_actuators[name].update_time_lags(random_delays, all_env_ids)
+            # Read back to confirm
+            actual = robot_actuators[name].torques_delay_buffer.time_lags
+            if not (actual == random_delays).all():
+                raise RuntimeError(
+                    f"[pace_motor_delay_curriculum] Actuator '{name}': delay assignment mismatch."
+                )
+
+    return torch.tensor(float(current_max_delay), device=env.device)
