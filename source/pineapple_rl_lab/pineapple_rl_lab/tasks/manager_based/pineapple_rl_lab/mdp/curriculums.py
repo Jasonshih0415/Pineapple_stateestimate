@@ -196,17 +196,19 @@ def pace_motor_delay_curriculum(
             setattr(env, "_pace_motor_current_delay", current_max_delay)
             print(f"[pace_motor_delay_curriculum] max delay -> {current_max_delay} (move_up_frac={move_up:.2f})")
 
-    # Randomize per-env delay in [0, current_max_delay] at every reset
-    all_env_ids = torch.arange(env.num_envs, device=env.device)
-    random_delays = torch.randint(0, current_max_delay + 1, (env.num_envs,), device=env.device).int()
+    # Sample a new per-env delay only for environments in this reset batch.
+    # Other environments keep their current delay until their own reset, so their active lag
+    # does not change mid-episode when an unrelated environment resets.
+    env_ids_tensor = torch.as_tensor(env_ids, device=env.device, dtype=torch.long)
+    random_delays = torch.randint(0, current_max_delay + 1, (len(env_ids_tensor),), device=env.device).int()
 
     robot_actuators = asset.actuators
     targets = actuator_names if actuator_names is not None else list(robot_actuators.keys())
     for name in targets:
         if name in robot_actuators:
-            robot_actuators[name].update_time_lags(random_delays, all_env_ids)
+            robot_actuators[name].update_time_lags(random_delays, env_ids_tensor)
             # Read back to confirm
-            actual = robot_actuators[name].torques_delay_buffer.time_lags
+            actual = robot_actuators[name].torques_delay_buffer.time_lags[env_ids_tensor]
             if not (actual == random_delays).all():
                 raise RuntimeError(
                     f"[pace_motor_delay_curriculum] Actuator '{name}': delay assignment mismatch."
