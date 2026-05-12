@@ -1,5 +1,5 @@
 import isaaclab.sim as sim_utils
-from isaaclab.actuators import DCMotorCfg
+from isaaclab.actuators import DCMotorCfg, DelayedPDActuatorCfg
 from isaaclab.assets.articulation import ArticulationCfg
 from pineapple_rl_lab.assets.utils.pace_actuator_cfg import PaceDCMotorCfg
 
@@ -204,8 +204,8 @@ PINEAPPLE_V2_CFG = ArticulationCfg(
             stiffness=40.0,
             damping=1.0,
             friction=0.1,
-            # armature=0.004, # 0.035
-            # viscous_friction=0.02,   # 0.4
+            armature=0.004, # 0.035
+            viscous_friction=0.02,   # 0.4
             max_delay=3,
             encoder_bias=0.0,
         ),
@@ -217,8 +217,8 @@ PINEAPPLE_V2_CFG = ArticulationCfg(
             stiffness=25.0,
             damping=0.5,
             friction=0.1,
-            # armature=0.004,  # 0.035
-            # viscous_friction=0.02,   # 0.4
+            armature=0.004,  # 0.035
+            viscous_friction=0.02,   # 0.4
             max_delay=3,
             encoder_bias=0.0,
         ),
@@ -230,8 +230,8 @@ PINEAPPLE_V2_CFG = ArticulationCfg(
             stiffness=25.0,
             damping=0.5,
             friction=0.2,
-            # armature=0.0161, # 0.035
-            # viscous_friction=0.091,   # 0.4
+            armature=0.0161, # 0.035
+            viscous_friction=0.091,   # 0.4
             max_delay=3,
             encoder_bias=0.0,
         ),

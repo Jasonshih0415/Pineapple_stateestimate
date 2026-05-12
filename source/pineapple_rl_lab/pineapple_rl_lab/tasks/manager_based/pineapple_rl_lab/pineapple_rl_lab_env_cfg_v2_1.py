@@ -35,7 +35,7 @@ class PineappleActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=LEG_JOINT_NAMES, scale=0.5, use_default_offset=True)
-    joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=WHEEL_JOINT_NAMES, scale=5.0, use_default_offset=True)
+    joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=WHEEL_JOINT_NAMES, scale=5.0, use_default_offset=True, clip={".*_wheel_joint": (-25.13, 25.13)})
 
 
 @configclass
@@ -45,7 +45,7 @@ class PineappleCommandsCfg:
     base_velocity = pineapple_mdp.PineappleVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 15.0),
-        rel_standing_envs=0.3,
+        rel_standing_envs=0.1,
         rel_heading_envs=0.0,
         heading_command=False,
         debug_vis=True,
@@ -53,7 +53,7 @@ class PineappleCommandsCfg:
             # Calculated based on Wheel Velocity Limit (25.13 rad/s), Radius (0.077m), and Half-Track-Width (~0.205m)
             # Max Lin Vel = 25.13 * 0.077 = ~1.93 m/s
             # Max Ang Vel = 1.93 / 0.205 = ~9.4 rad/s
-            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-3.14, 3.14)
+            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-2.0, 2.0)
         ),
     )
 
@@ -94,15 +94,15 @@ class PineappleObservationsCfg:
             func=mdp.base_ang_vel, 
             scale=0.25,
             params={"asset_cfg": SceneEntityCfg("robot")}, 
-            noise=Unoise(n_min=-0.5, n_max=0.5)
+            noise=Unoise(n_min=-0.1, n_max=0.1)
         )
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
             params={"asset_cfg": SceneEntityCfg("robot")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
+            noise=Unoise(n_min=-0.05, n_max=0.05),
         )
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-        height_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_height"})
+        height_commands = ObsTerm(func=mdp.generated_commands, scale=3.0, params={"command_name": "base_height"})
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel, 
             scale=1.0,
@@ -139,7 +139,7 @@ class PineappleObservationsCfg:
             params={"asset_cfg": SceneEntityCfg("robot")},
         )
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-        height_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_height"})
+        height_commands = ObsTerm(func=mdp.generated_commands, scale=3.0, params={"command_name": "base_height"})
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel, scale=1.0, params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)}
         )
@@ -250,7 +250,7 @@ class PineappleEventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
-            "com_range": {"x": (-0.01, 0.01), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
+            "com_range": {"x": (-0.05, 0.05), "y": (-0.02, 0.02), "z": (-0.02, 0.02)},
         },
     )
 
@@ -266,7 +266,7 @@ class PineappleRewardsCfg:
     )
     track_base_height = RewardTermCfg(
         func=pineapple_mdp.track_base_height_exp,
-        weight=2.0,
+        weight=1.0,
         params={"asset_cfg": SceneEntityCfg("robot"), "command_name": "base_height", "std": 0.05}
     )
 
@@ -285,12 +285,12 @@ class PineappleRewardsCfg:
     )
     joint_acc = RewardTermCfg(
         func=mdp.joint_acc_l2,
-        weight=-2.5e-7,
+        weight=-5.0e-6,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
     )
     joint_acc_wheel = RewardTermCfg(
         func=mdp.joint_acc_l2,
-        weight=-2.5e-7,
+        weight=-5.0e-6,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINT_NAMES)},
     )
     joint_pos = RewardTermCfg(
@@ -300,7 +300,7 @@ class PineappleRewardsCfg:
     )
     joint_pos_hip = RewardTermCfg(
         func=pineapple_mdp.joint_deviation_l1,
-        weight=-1.0,
+        weight=-5.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*_hip_joint")},
     )
     joint_torques = RewardTermCfg(
@@ -312,6 +312,17 @@ class PineappleRewardsCfg:
         func=mdp.joint_vel_l2,
         weight=-1.0e-5,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
+    )
+    joint_alignment_hip = RewardTermCfg(
+        func=pineapple_mdp.joint_align,
+        weight=-1.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "joint_a": "L_hip_joint",
+            "joint_b": "R_hip_joint",
+            "use": "pos",
+            "opposite_sign": True,
+            },
     )
     joint_alignment_thigh = RewardTermCfg(
         func=pineapple_mdp.joint_align,
@@ -338,6 +349,11 @@ class PineappleRewardsCfg:
         weight=-10.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
     )
+    joint_vel_limit = RewardTermCfg(
+        func=mdp.joint_vel_limits,
+        weight=-10.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*"), "soft_ratio":0.9},
+    )
     undesired_contacts = RewardTermCfg(
         func=mdp.undesired_contacts,
         weight=-10.0,
@@ -345,6 +361,16 @@ class PineappleRewardsCfg:
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=[f"^(?!.*{FOOT_LINK_NAME}).*"]),
             "threshold": 1.0,
         },
+    )
+    zero_cmd_lin_vel = RewardTermCfg(
+        func=pineapple_mdp.zero_cmd_lin_vel,
+        weight=-1.0,
+        params={"command_name": "base_velocity", "asset_cfg": SceneEntityCfg("robot")},
+    )
+    zero_cmd_ang_vel = RewardTermCfg(
+        func=pineapple_mdp.zero_cmd_ang_vel,
+        weight=-1.0,
+        params={"command_name": "base_velocity", "asset_cfg": SceneEntityCfg("robot")},
     )
 
 
@@ -369,7 +395,7 @@ class PineappleCurriculumCfg:
             "asset_cfg": SceneEntityCfg("robot"),
             "actuator_names": ["hip", "thigh", "calf", "wheel"],
             "max_delay": 3,
-            # mean episode distance (m) at which delay increments: 0→1, 1→2, 2→3
+            # mean episode distance (m) at which delay increments: 0→1, 1→2
             "distance_thresholds": (5.0, 10.0, 15.0),
         },
     )
@@ -452,8 +478,9 @@ class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
         # post init of parent
         super().__post_init__()
         # set velocity command ranges for play
-        # self.commands.base_velocity.ranges.lin_vel_x = (-1.9, -1.9)
-        # self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (1.5, 1.5)
+        self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
+        self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
 
         # make a smaller scene for play
         self.scene.num_envs = 50
@@ -472,5 +499,5 @@ class PineappleFlatEnvCfgV2_PLAY(PineappleFlatEnvCfgV2):
         self.observations.policy.enable_corruption = False
         # remove random pushing event
 
-        # disable delay curriculum; delay stays at max_delay set in robot cfg
-        # self.curriculum.pace_motor_delay = None
+        # disable delay curriculum for play
+        self.curriculum.pace_motor_delay = None

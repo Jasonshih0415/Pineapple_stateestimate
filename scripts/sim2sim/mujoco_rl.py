@@ -1,4 +1,6 @@
 import time
+import importlib.util
+from pathlib import Path
 
 import mujoco.viewer
 import mujoco
@@ -7,8 +9,17 @@ import torch
 import yaml
 import matplotlib.pyplot as plt
 import argparse
-import gui_teleop
 from mujoco_sipo_v3 import SIPO, get_contact_states 
+
+# _headless_teleop_path = Path(__file__).with_name("headless_teleop.py")
+# _headless_teleop_spec = importlib.util.spec_from_file_location("headless_teleop", _headless_teleop_path)
+# if _headless_teleop_spec is None or _headless_teleop_spec.loader is None:
+#     raise ImportError(f"Failed to load teleop module from {_headless_teleop_path}")
+# _headless_teleop_module = importlib.util.module_from_spec(_headless_teleop_spec)
+# _headless_teleop_spec.loader.exec_module(_headless_teleop_module)
+# HeadlessTeleop = _headless_teleop_module.HeadlessTeleop
+
+from headless_teleop import HeadlessTeleop
 
 def calculate_com_in_base_frame(model, data, base_body_id):
     total_mass = 0.0
@@ -173,14 +184,14 @@ if __name__ == "__main__":
         min_height = config.get("min_height", 0.2)
         max_height = config.get("max_height", 0.35)
         height_step = config.get("height_step", 0.005)
+        enable_height_command = config.get("enable_height_command", True)
 
         policy_index_map = config.get("policy_index_map", None)
         if policy_index_map is not None:
              policy_index_map = np.array(policy_index_map, dtype=np.int64)
 
-    # Initialize Gamepad
-    # cmd_vel = np.array(config["cmd_init"], dtype=np.float32)
-    teleop = gui_teleop.GUITeleop(
+    # Initialize headless teleop (keyboard + optional gamepad)
+    teleop = HeadlessTeleop(
         config_init=config["cmd_init"], 
         max_lin=max_lin, 
         max_ang=max_ang,
@@ -189,8 +200,7 @@ if __name__ == "__main__":
         min_height=min_height,
         max_height=max_height
     )
-    # gamepad = gamepad_reader.Gamepad(vel_scale_x=1.0, vel_scale_y=1.0, vel_scale_rot=3.0)
-    print("GUI Teleop initialized. Click the 'Control Panel' window to send commands.")
+    print("Headless teleop initialized (no GUI window).")
 
     target_dof_pos = default_angles.copy()
     target_dof_vel = np.zeros(num_actions)
@@ -210,11 +220,13 @@ if __name__ == "__main__":
     lin_vel_data_list = []
     ang_vel_data_list = []
     gravity_b_list = []
+    joint_pos_list=[]
     joint_vel_list = []
     action_list = []
     time_list = []
     cmd_list = []
-    
+    tau_list = []
+
     # SIPO Record
     sipo_pos_list = []
     sipo_vel_list = []
@@ -229,9 +241,6 @@ if __name__ == "__main__":
     sipo_yaw_rate_list = []
     gt_yaw_rate_list = []
     
-    
-    # time_list = [i * simulation_dt for i in range(int(simulation_duration / simulation_dt))]
-
     counter = 0
 
     with mujoco.viewer.launch_passive(m, d) as viewer:
@@ -274,7 +283,8 @@ if __name__ == "__main__":
             step_start = time.time()
     
             tau = pd_control(target_dof_pos, d.sensordata[:num_actions], kps, target_dof_vel, d.sensordata[num_actions:num_actions + num_actions], kds)
-            
+            tau_list.append(tau.copy())
+
             # if time.time() - start > 3:
             d.ctrl[:] = tau
 
@@ -372,22 +382,27 @@ if __name__ == "__main__":
             leg_pos_delta = (qpos_obs[valid_leg_idx] - default_angles_pol[valid_leg_idx]) * dof_pos_scale
             leg_pos_delta = leg_pos_delta.astype(np.float32).ravel()
             
-            # NOTE: Added current_cmd_height after current_cmd_vel
             obs_list = [
                 ang_vel_b * ang_vel_scale,
                 gravity_b,
                 current_cmd_vel * cmd_scale,
-                current_cmd_height * height_scale,
                 leg_pos_delta,
                 qvel_obs * dof_vel_scale,
                 action.astype(np.float32)
             ]
+            if enable_height_command:
+                obs_list.insert(3, current_cmd_height * height_scale)
+
             ## Record Data ##
             lin_vel_data_list.append(lin_vel_b.copy())
             ang_vel_data_list.append(ang_vel_b.copy())
             gravity_b_list.append(gravity_b)
+            joint_pos_list.append(qpos_obs.copy())
             joint_vel_list.append(qvel_obs.copy()) 
-            action_list.append(action * vel_action_scale)
+            scaled_action = action.copy()
+            scaled_action[leg_joint_indices] *= pos_action_scale
+            scaled_action[wheel_joint_indices] *= vel_action_scale
+            action_list.append(scaled_action)
             time_list.append(counter * simulation_dt)
             cmd_list.append(current_cmd_vel.copy()) 
             ###
@@ -535,24 +550,40 @@ if __name__ == "__main__":
     plt.grid()
 
     plt.subplot(2, 2, 3)
-    for i in range(3):
-        plt.plot(time_list, [step[i] for step in gravity_b_list], label=f"Project Gravity {i}")
-    plt.title(f"History Project Gravity", fontsize=10, pad=10)  # Added pad for spacing
+    # for i in range(3):
+    #     plt.plot(time_list, [step[i] for step in gravity_b_list], label=f"Project Gravity {i}")
+    for i in (3, 7):
+        plt.plot(time_list, [step[i] for step in tau_list], label=f"Joint Torque {i}")
+    for i in (6, 7):
+        plt.plot(time_list, [step[i] for step in joint_vel_list], label=f"Joint vel {i}")
+    for i in (6, 7):
+        plt.plot(time_list, [step[i] for step in action_list], label=f"Joint action {i}", linestyle='--')
+    plt.title(f"History Joint", fontsize=10, pad=10)  # Added pad for spacing
     plt.legend()
     plt.grid()
 
     plt.subplot(2, 2, 4)
-    for i in wheel_joint_indices:
-        plt.plot(time_list, [step[i] for step in joint_vel_list], label=f"Joint Velocity {i}")
-    for i in wheel_joint_indices:
-        plt.plot(time_list, [step[i] for step in action_list], label=f"velocity Command {i}", linestyle='--')
-    plt.title(f"History Joint Velocity", fontsize=10, pad=10)  # Added pad for spacing
+    # for i in (3, 7):
+    #     plt.plot(time_list, [step[i] for step in tau_list], label=f"Joint Torque {i}")
+    # for i in (6, 7):
+    #     plt.plot(time_list, [step[i] for step in joint_vel_list], label=f"Joint vel {i}")
+    # for i in (6, 7):
+    #     plt.plot(time_list, [step[i] for step in action_list], label=f"Joint action {i}", linestyle='--')
+
+    for i in (0, 4):
+        plt.plot(time_list, [step[i] for step in tau_list], label=f"Joint Torque {i}")
+    for i in (0, 1):
+        plt.plot(time_list, [step[i] for step in joint_pos_list], label=f"Joint pos {i}")
+    for i in (0, 1):
+        plt.plot(time_list, [step[i] for step in action_list], label=f"Joint action {i}", linestyle='--')
+    plt.title(f"History Joint", fontsize=10, pad=10)  # Added pad for spacing
     plt.legend()
     plt.grid()
     
     plt.tight_layout()
+    plt.show()
     plt.savefig("history_data.png", dpi=300)
     plt.close(fig_hist)
-    # # plt.show()
+    
 
     teleop.close()

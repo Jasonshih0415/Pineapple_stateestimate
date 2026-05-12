@@ -68,8 +68,9 @@ def joint_align(
     joint_a: str,
     joint_b: str,
     use: str = "pos",  # "pos", "vel", or "action"
+    opposite_sign: bool = False,
 ) -> torch.Tensor:
-    """Return |joint_a - joint_b| per env."""
+    """Return joint alignment error per env."""
     asset: Articulation = env.scene[asset_cfg.name]
 
     # Resolve indices (consistent with existing code style)
@@ -88,7 +89,10 @@ def joint_align(
     else:
         raise ValueError("use must be one of: 'pos', 'vel', 'action'.")
 
-    return torch.sum(torch.abs(a-b), dim=1)
+    if opposite_sign:
+        return torch.sum(torch.abs(a + b), dim=1)
+
+    return torch.sum(torch.abs(a - b), dim=1)
 
 # def base_height_penalty(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg, target_height: float) -> torch.Tensor:
 #     """Penalize deviation from target base height."""
@@ -587,3 +591,31 @@ def feet_too_near_humanoid(
     feet_pos = asset.data.body_pos_w[:, asset_cfg.body_ids, :]
     distance = torch.norm(feet_pos[:, 0] - feet_pos[:, 1], dim=-1)
     return (threshold - distance).clamp(min=0)
+
+
+def zero_cmd_lin_vel(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    cmd_threshold: float = 0.05,
+) -> torch.Tensor:
+    """Penalize actual x velocity when the commanded x velocity is near zero."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    cmd = env.command_manager.get_command(command_name)
+    is_zero_cmd = torch.abs(cmd[:, 0]) < cmd_threshold
+    lin_vel_sq = torch.square(asset.data.root_lin_vel_b[:, 0])
+    return torch.where(is_zero_cmd, lin_vel_sq, torch.zeros_like(lin_vel_sq))
+
+
+def zero_cmd_ang_vel(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    cmd_threshold: float = 0.05,
+) -> torch.Tensor:
+    """Penalize actual angular velocity when the commanded angular velocity is near zero."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    cmd = env.command_manager.get_command(command_name)
+    is_zero_cmd = torch.abs(cmd[:, 2]) < cmd_threshold
+    ang_vel_sq = torch.square(asset.data.root_ang_vel_b[:, 2])
+    return torch.where(is_zero_cmd, ang_vel_sq, torch.zeros_like(ang_vel_sq))

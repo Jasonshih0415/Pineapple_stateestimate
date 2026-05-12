@@ -42,7 +42,8 @@ class PaceDCMotor(DCMotor):
         self.encoder_bias = torch.tensor(cfg.encoder_bias, device=self._device).unsqueeze(0).repeat(self._num_envs, 1)
 
         self.torques_delay_buffer = DelayBuffer(cfg.max_delay + 1, self._num_envs, device=self._device)
-        self.torques_delay_buffer.set_time_lag(cfg.max_delay, torch.arange(self._num_envs, device=self._device))
+        # Allocate enough history for the final curriculum value, but start with no active delay.
+        self.torques_delay_buffer.set_time_lag(0, torch.arange(self._num_envs, device=self._device))
 
     def reset(self, env_ids: Sequence[int]):
         super().reset(env_ids)
