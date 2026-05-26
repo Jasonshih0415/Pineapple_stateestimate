@@ -1,3 +1,5 @@
+# Reference: https://github.com/ShuoYangRobotics/Multi-IMU-Proprioceptive-Odometry
+
 import numpy as np
 import mujoco
 import yaml
@@ -24,7 +26,7 @@ def quat_kinematics_casadi(q, w_body):
     return 0.5 * cs.mtimes(Omega, q)
 
 class SIPO:
-    def __init__(self, xml_path, config_path="scripts/sim2sim/sipo_config_v3.yaml"):
+    def __init__(self, xml_path, config_path="scripts/sim2sim/config/sipo_config.yaml"):
         print(f"Loading SIPO Config from: {config_path}")
         with open(config_path, 'r') as f:
             self.cfg = yaml.safe_load(f)
@@ -438,4 +440,3 @@ def get_contact_states(m, d, body_names):
                 contacts[i] = 1.0
                 break
     return contacts
-

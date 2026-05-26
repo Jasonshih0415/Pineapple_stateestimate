@@ -37,9 +37,12 @@ scripts/sim2sim/
 ├── config/
 │   ├── pineapple_v0.yaml               # Sim2Sim Config for v0
 │   ├── pineapple_v1.yaml               # Sim2Sim Config for v1
-│   └── pineapple_v2.yaml               # Sim2Sim Config for v2
+│   ├── pineapple_v2.yaml               # Sim2Sim Config for v2
+│   └── sipo_config.yaml                # SIPO Config
+├── logs/                               # Sim2Sim output figures
 ├── gui_teleop.py                       # Teleoperation GUI
-└── mujoco_rl.py                        # Mujoco Simulation Script
+├── mujoco_rl.py                        # Mujoco Simulation Script
+└── mujoco_sipo_v3.py                   # SIPO Estimator
 ```
 
 ## Installation
@@ -147,11 +150,14 @@ Run the following command to start the Mujoco simulation with the trained policy
 ```bash
 # Running under project root directory
 # For Pineapple v2
-python scripts/sim2sim/mujoco_rl.py scripts/sim2sim/config/pineapple_v2.yaml
+python scripts/sim2sim/mujoco_rl.py
 ```
 The script will open a GUI for teleoperation and a Mujoco viewer.
 - The **Control Panel** allows you to send velocity commands to the robot.
 - The **Mujoco Viewer** shows the robot in the simulation.
+- Use `--config <path_to_config>` to select a config file.
+- Use `--sipo true` with `mujoco_rl.py` to enable SIPO.
+- Output figures are saved under `scripts/sim2sim/logs/`.
 
 
 ### Set up IDE (Optional)

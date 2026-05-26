@@ -5,6 +5,7 @@ import threading
 import time
 import tty
 import importlib
+import math
 
 import numpy as np
 
@@ -38,19 +39,34 @@ class HeadlessTeleop:
         height_step=0.01,
         min_height=0.2,
         max_height=0.35,
+        ee_pose_init=None,
+        ee_pos_step=0.01,
+        ee_rot_step=0.05,
+        ee_pos_min=None,
+        ee_pos_max=None,
         gamepad_deadzone=0.1,
     ):
         self.cmd_vel = np.array(config_init, dtype=np.float32)
         self.cmd_height = float(height_init)
+        self.ee_pose = None if ee_pose_init is None else np.array(ee_pose_init, dtype=np.float32)
+        self.ee_pose_init = None if self.ee_pose is None else self.ee_pose.copy()
+        self.ee_rpy = np.zeros(3, dtype=np.float32)
+        if self.ee_pose is not None:
+            self.ee_pose[3:] = self._normalize_quat(self.ee_pose[3:])
+            self.ee_rpy = self._quat_to_rpy(self.ee_pose[3:])
 
         self.lin_step = float(lin_step)
         self.ang_step = float(ang_step)
         self.height_step = float(height_step)
+        self.ee_pos_step = float(ee_pos_step)
+        self.ee_rot_step = float(ee_rot_step)
 
         self.max_lin = float(max_lin)
         self.max_ang = float(max_ang)
         self.min_height = float(min_height)
         self.max_height = float(max_height)
+        self.ee_pos_min = None if ee_pos_min is None else np.array(ee_pos_min, dtype=np.float32)
+        self.ee_pos_max = None if ee_pos_max is None else np.array(ee_pos_max, dtype=np.float32)
         self.gamepad_deadzone = float(gamepad_deadzone)
 
         self.lock = threading.Lock()
@@ -65,19 +81,32 @@ class HeadlessTeleop:
         self._start_gamepad_thread_if_available()
 
         print("Headless teleop active.")
-        print("Keyboard: W/S linear, A/D yaw, R/F height, SPACE stop.")
+        if self.ee_pose is not None:
+            print("Keyboard: W/S linear, A/D yaw, SPACE stop.")
+            print("EE pose: I/K x, J/L y, R/F z, T/G roll, Y/H pitch, U/O yaw, P reset.")
+        else:
+            print("Keyboard: W/S linear, A/D yaw, R/F height, SPACE stop.")
         if self._gamepad_thread is not None:
-            print("Gamepad: left stick Y linear, right/left stick X yaw, d-pad up/down height, A stop.")
+            if self.ee_pose is None:
+                print("Gamepad: left stick Y linear, right/left stick X yaw, d-pad up/down height, A stop.")
+            else:
+                print("Gamepad: left stick Y linear, right/left stick X yaw, d-pad up/down EE z, A stop.")
         else:
             print("Gamepad: python package 'inputs' not found or no gamepad events available.")
 
     def get_command(self):
         with self.lock:
             return self.cmd_vel.copy()
-
+            
     def get_height_command(self):
         with self.lock:
             return self.cmd_height
+
+    def get_ee_pose_command(self):
+        with self.lock:
+            if self.ee_pose is None:
+                raise RuntimeError("EE pose command is not configured for this teleop instance.")
+            return self.ee_pose.copy()
 
     def close(self):
         self.running = False
@@ -131,9 +160,39 @@ class HeadlessTeleop:
                 elif key == "d":
                     self.cmd_vel[2] = np.clip(self.cmd_vel[2] - self.ang_step, -self.max_ang, self.max_ang)
                 elif key == "r":
-                    self.cmd_height = np.clip(self.cmd_height + self.height_step, self.min_height, self.max_height)
+                    if self.ee_pose is None:
+                        self.cmd_height = np.clip(self.cmd_height + self.height_step, self.min_height, self.max_height)
+                    else:
+                        self._adjust_ee_position(2, self.ee_pos_step)
                 elif key == "f":
-                    self.cmd_height = np.clip(self.cmd_height - self.height_step, self.min_height, self.max_height)
+                    if self.ee_pose is None:
+                        self.cmd_height = np.clip(self.cmd_height - self.height_step, self.min_height, self.max_height)
+                    else:
+                        self._adjust_ee_position(2, -self.ee_pos_step)
+                elif self.ee_pose is not None and key == "i":
+                    self._adjust_ee_position(0, self.ee_pos_step)
+                elif self.ee_pose is not None and key == "k":
+                    self._adjust_ee_position(0, -self.ee_pos_step)
+                elif self.ee_pose is not None and key == "j":
+                    self._adjust_ee_position(1, self.ee_pos_step)
+                elif self.ee_pose is not None and key == "l":
+                    self._adjust_ee_position(1, -self.ee_pos_step)
+                elif self.ee_pose is not None and key == "t":
+                    self._adjust_ee_rotation(0, self.ee_rot_step)
+                elif self.ee_pose is not None and key == "g":
+                    self._adjust_ee_rotation(0, -self.ee_rot_step)
+                elif self.ee_pose is not None and key == "y":
+                    self._adjust_ee_rotation(1, self.ee_rot_step)
+                elif self.ee_pose is not None and key == "h":
+                    self._adjust_ee_rotation(1, -self.ee_rot_step)
+                elif self.ee_pose is not None and key == "u":
+                    self._adjust_ee_rotation(2, self.ee_rot_step)
+                elif self.ee_pose is not None and key == "o":
+                    self._adjust_ee_rotation(2, -self.ee_rot_step)
+                elif self.ee_pose is not None and key == "p":
+                    self.ee_pose[:] = self.ee_pose_init
+                    self.ee_rpy = self._quat_to_rpy(self.ee_pose[3:])
+                    self.ee_pose[3:] = self._rpy_to_quat(self.ee_rpy)
                 elif key == " ":
                     self.cmd_vel[:] = 0.0
 
@@ -164,8 +223,65 @@ class HeadlessTeleop:
                         self.cmd_vel[2] = np.clip(self._normalize_axis(-(ev.state-127)) * self.max_ang, -self.max_ang, self.max_ang)
                     elif ev.code == "ABS_HAT0Y":
                         if ev.state == -1:
-                            self.cmd_height = np.clip(self.cmd_height + self.height_step, self.min_height, self.max_height)
+                            if self.ee_pose is None:
+                                self.cmd_height = np.clip(self.cmd_height + self.height_step, self.min_height, self.max_height)
+                            else:
+                                self._adjust_ee_position(2, self.ee_pos_step)
                         elif ev.state == 1:
-                            self.cmd_height = np.clip(self.cmd_height - self.height_step, self.min_height, self.max_height)
+                            if self.ee_pose is None:
+                                self.cmd_height = np.clip(self.cmd_height - self.height_step, self.min_height, self.max_height)
+                            else:
+                                self._adjust_ee_position(2, -self.ee_pos_step)
                     elif ev.code == "BTN_SOUTH" and int(ev.state) == 1:
                         self.cmd_vel[:] = 0.0
+
+    def _adjust_ee_position(self, index, delta):
+        self.ee_pose[index] += float(delta)
+        if self.ee_pos_min is not None:
+            self.ee_pose[:3] = np.maximum(self.ee_pose[:3], self.ee_pos_min)
+        if self.ee_pos_max is not None:
+            self.ee_pose[:3] = np.minimum(self.ee_pose[:3], self.ee_pos_max)
+
+    def _adjust_ee_rotation(self, index, delta):
+        self.ee_rpy[index] += float(delta)
+        self.ee_pose[3:] = self._rpy_to_quat(self.ee_rpy)
+
+    def _normalize_quat(self, quat):
+        quat = np.array(quat, dtype=np.float32)
+        norm = np.linalg.norm(quat)
+        if norm < 1e-6:
+            return np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        return quat / norm
+
+    def _quat_to_rpy(self, quat):
+        w, x, y, z = self._normalize_quat(quat)
+        sinr_cosp = 2.0 * (w * x + y * z)
+        cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
+        roll = math.atan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2.0 * (w * y - z * x)
+        pitch = math.copysign(math.pi / 2.0, sinp) if abs(sinp) >= 1.0 else math.asin(sinp)
+
+        siny_cosp = 2.0 * (w * z + x * y)
+        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+        yaw = math.atan2(siny_cosp, cosy_cosp)
+        return np.array([roll, pitch, yaw], dtype=np.float32)
+
+    def _rpy_to_quat(self, rpy):
+        roll, pitch, yaw = rpy
+        cy = math.cos(yaw * 0.5)
+        sy = math.sin(yaw * 0.5)
+        cp = math.cos(pitch * 0.5)
+        sp = math.sin(pitch * 0.5)
+        cr = math.cos(roll * 0.5)
+        sr = math.sin(roll * 0.5)
+        quat = np.array(
+            [
+                cr * cp * cy + sr * sp * sy,
+                sr * cp * cy - cr * sp * sy,
+                cr * sp * cy + sr * cp * sy,
+                cr * cp * sy - sr * sp * cy,
+            ],
+            dtype=np.float32,
+        )
+        return self._normalize_quat(quat)

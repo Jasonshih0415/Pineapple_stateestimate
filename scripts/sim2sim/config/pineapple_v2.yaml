@@ -1,32 +1,6 @@
-# configuration for mujoco_rl_him
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-03-02_23-41-17/exported/policy.pt"
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-03-24_15-46-28/exported/policy.pt"
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-16_21-49-23/exported/policy.pt"  # no delay  + wheel armature + friction + 1.5 linear speed
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-17_17-45-35/exported/policy.pt"  # 3 delay  + wheel armature + friction + 1.5 linear speed
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-16_18-31-09/exported/policy.pt"  # no delay +  small noise + wheel armature + friction + 1.5 linear speed
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-16_17-43-05/exported/policy.pt"  # 3 steps delay +  small noise + wheel armature + friction + 1.5 linear speed
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-21_14-06-00/exported/policy.pt"  # 3 steps delay + large hip kp + wheel armature + friction + 1.5 linear speed
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-21_16-09-11/exported/policy.pt"  # 3 steps delay + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-21_18-02-59/exported/policy.pt"  # full armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-22_11-40-05/exported/policy.pt"  # no armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-22_14-34-15/exported/policy.pt"  # fix height + no armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-22_23-03-53/exported/policy.pt"  # small noise, smoothness++, height 25-35, wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-23_12-35-49/exported/policy.pt"  # height scale 3.0,  small noise, smoothness+,, wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-23_20-48-36/exported/policy.pt"  # [best] height scale 3.0,  small noise, smoothness++,, wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-24_11-35-34/exported/policy.pt"  # smoothness+++, hip pos ++, height scale 3.0,  small noise, , wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-24_15-27-24/exported/policy.pt"  # smoothness++, hip pos ++, height scale 3.0,  small noise, , wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-30_13-12-08/exported/policy.pt"  # 40 1.0, smoothness++, hip pos 1.0, height scale 3.0,  small noise, , full armature + large pos penalty + large hip kp + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-30_14-22-15/exported/policy.pt"  # wheel stl, smoothness++, hip pos 1.0, height scale 3.0,  small noise, , full armature + large pos penalty + large hip kp + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-04-30_17-58-06/exported/policy.pt"
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-02_21-23-20/exported/policy.pt"  # new collision, height scale 3.0,  small noise, smoothness++, wheel armature + large pos penalty + large hip kp + hip_pos -0.1 + small com randomization
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-04_00-09-50/exported/policy.pt"  # 
 policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-11_00-28-28/exported/policy.pt"  # [best] height with new delay
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-10_16-05-23/exported/policy.pt"  # fix height, smooth
 # policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-10_18-40-07/exported/policy.pt"  # [best] fix height, smooth--
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-10_20-27-57/exported/policy.pt"  # fix height, speed 1.0
 
-
-# policy_path: "logs/rsl_rl/pineapple_rough_v2/2026-04-08_17-09-50/exported/policy.pt"
 xml_path: "source/pineapple_rl_lab/pineapple_rl_lab/assets/data/Robots/csl/pineapple_v2/scene.xml"
 
 # Total simulation time
@@ -36,16 +10,11 @@ simulation_dt: 0.005
 # Controller update frequency (meets the requirement of simulation_dt * controll_decimation=0.02; 50Hz)
 control_decimation: 4
 # KP, KD gains for the PD controller, order matches xml joint order
-# kps: [40, 40, 40, 0, 40, 40, 40,  0]
-# kds: [1.0, 1.0, 1.0, 0.3, 1.0, 1.0, 1.0, 0.3]
-# kps: [25, 25, 25, 0, 25, 25, 25,  0]
-# kds: [0.5, 0.5, 0.5, 0.3, 0.5, 0.5, 0.5, 0.3]
 kps: [40, 25, 25, 0, 40, 25, 25,  0]
 kds: [1.0, 0.5, 0.5, 0.3, 1.0, 0.5, 0.5, 0.3]
 
 
 # default_angles, order matches xml joint order
-# default_angles: [0.0,  0.83, -1.484, 0.0, 0.0, 0.83, -1.484, 0.0]
 default_angles: [-0.1,  0.83, -1.484, 0.0, 0.1, 0.83, -1.484, 0.0]
 
 lin_vel_scale: 2.0
