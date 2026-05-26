@@ -24,24 +24,37 @@ source/pineapple_rl_lab/pineapple_rl_lab/
 │   └── data/Robots/csl/                # Robot Assets (URDFs, meshes)
 │       ├── pineapplev0_description/    # v0 Model
 │       ├── pineapple/                  # v1 Model
-│       └── pineapple_v2/               # v2 Model
+│       ├── pineapple_v2/               # v2 Model
+│       └── pineapple_v2_arm/           # v2 Arm Model
+├── env_go2arm_style/                   # v2 Arm RL Environment
 └── tasks/manager_based/pineapple_rl_lab/
     ├── agents/
     │   └── rsl_rl_ppo_cfg.py           # RL Agent Configuration (PPO hyperparameters)
+    ├── agents_go2arm_style/            # v2 Arm RL Agent Configuration
+    ├── mdp_go2arm_style/               # v2 Arm MDP Terms
     ├── __init__.py # Environment registration
     ├── pineapple_rl_lab_env_cfg_v0.py  # Environment Configuration for v0
     ├── pineapple_rl_lab_env_cfg_v1.py  # Environment Configuration for v1
-    └── pineapple_rl_lab_env_cfg_v2.py  # Environment Configuration for v2
+    ├── pineapple_rl_lab_env_cfg_v2.py  # Environment Configuration for v2
+    └── pineapple_rl_lab_env_cfg_v2_5.py # Environment Configuration for v2 Arm
+
+scripts/rsl_rl/
+├── train.py                            # RSL-RL Training Script
+├── play.py                             # RSL-RL Replay Script
+├── train_go2arm.py                     # v2 Arm Training Script
+└── play_go2arm.py                      # v2 Arm Replay Script
 
 scripts/sim2sim/
 ├── config/
 │   ├── pineapple_v0.yaml               # Sim2Sim Config for v0
 │   ├── pineapple_v1.yaml               # Sim2Sim Config for v1
 │   ├── pineapple_v2.yaml               # Sim2Sim Config for v2
+│   ├── pineapple_v2_5_arm.yaml         # Sim2Sim Config for v2 arm
 │   └── sipo_config.yaml                # SIPO Config
 ├── logs/                               # Sim2Sim output figures
 ├── gui_teleop.py                       # Teleoperation GUI
 ├── mujoco_rl.py                        # Mujoco Simulation Script
+├── mujoco_rl_v2arm.py                  # Mujoco Simulation Script for v2 arm
 └── mujoco_sipo_v3.py                   # SIPO Estimator
 ```
 
@@ -94,12 +107,22 @@ scripts/sim2sim/
 - Train a policy:
 
     ```bash
-    python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v2 --headless
+    python scripts/rsl_rl/train.py --task=Template-Pineapple-Rl-Lab-v2.1 --headless
     ```
 - Replay a policy:
 
     ```bash
-    python scripts/rsl_rl/play.py --task=Template-Pineapple-Rl-Lab-Play-v2
+    python scripts/rsl_rl/play.py --task=Template-Pineapple-Rl-Lab-Play-v2.1
+    ```
+- Train a Pineapple v2 arm policy:
+
+    ```bash
+    python scripts/rsl_rl/train_go2arm.py --task=Template-Pineapple-Arm-Rl-Lab-v2.5 --headless
+    ```
+- Replay a Pineapple v2 arm policy:
+
+    ```bash
+    python scripts/rsl_rl/play_go2arm.py --task=Template-Pineapple-Arm-Rl-Lab-Play-v2.5
     ```
 - Look for training logs:
 
@@ -116,9 +139,13 @@ The following tasks are available for the Pineapple robot. Each task corresponds
 | `Template-Pineapple-Rl-Lab-v0` | Velocity tracking locomotion for Pineapple v0 on flat terrain. |
 | `Template-Pineapple-Rl-Lab-v1` | Velocity tracking locomotion for Pineapple v1 on flat terrain. |
 | `Template-Pineapple-Rl-Lab-v2` | Velocity tracking locomotion for Pineapple v2 on flat terrain. |
+| `Template-Pineapple-Rl-Lab-v2.1` | Velocity and height command tracking for Pineapple v2 on flat terrain. |
 | `Template-Pineapple-Rl-Lab-Play-v0` | Play/Evaluation environment for Pineapple v0. |
 | `Template-Pineapple-Rl-Lab-Play-v1` | Play/Evaluation environment for Pineapple v1. |
 | `Template-Pineapple-Rl-Lab-Play-v2` | Play/Evaluation environment for Pineapple v2. |
+| `Template-Pineapple-Rl-Lab-Play-v2.1` | Play/Evaluation environment for Pineapple v2.1. |
+| `Template-Pineapple-Arm-Rl-Lab-v2.5` | Locomotion and arm pose tracking for Pineapple v2 arm on flat terrain. |
+| `Template-Pineapple-Arm-Rl-Lab-Play-v2.5` | Play/Evaluation environment for Pineapple v2 arm. |
 
 ## Sim2Sim
 
@@ -149,13 +176,17 @@ Run the following command to start the Mujoco simulation with the trained policy
 
 ```bash
 # Running under project root directory
-# For Pineapple v2
+# For Pineapple v2 / v2.1
 python scripts/sim2sim/mujoco_rl.py
+
+# For Pineapple v2 arm
+python scripts/sim2sim/mujoco_rl_v2arm.py
 ```
 The script will open a GUI for teleoperation and a Mujoco viewer.
 - The **Control Panel** allows you to send velocity commands to the robot.
 - The **Mujoco Viewer** shows the robot in the simulation.
 - Use `--config <path_to_config>` to select a config file.
+- Pineapple v2 and v2.1 use `scripts/sim2sim/config/pineapple_v2.yaml`.
 - Use `--sipo true` with `mujoco_rl.py` to enable SIPO.
 - Output figures are saved under `scripts/sim2sim/logs/`.
 
