@@ -4,7 +4,7 @@ policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-11_00-28-28/exported/policy.
 xml_path: "source/pineapple_rl_lab/pineapple_rl_lab/assets/data/Robots/csl/pineapple_v2/scene.xml"
 
 # Total simulation time
-simulation_duration: 60
+simulation_duration: 28
 # Simulation time step
 simulation_dt: 0.005
 # Controller update frequency (meets the requirement of simulation_dt * controll_decimation=0.02; 50Hz)
@@ -42,3 +42,29 @@ min_height: 0.25
 max_height: 0.35
 height_step: 0.005
 height_scale: 3.0
+
+# Scripted command sequence for reproducible SIPO comparisons.
+# Each step runs for `duration` seconds. Fields: vx (m/s), wz (rad/s), height (m).
+# Designed to maximise body tilt, which is where v3 and v3_new diverge:
+#   v3     applies wheel-radius drop in rotated body frame → contact drifts laterally when tilted
+#   v3_new applies wheel-radius drop in world Z           → always physically correct
+# Remove or comment out this section to fall back to keyboard/gamepad teleop.
+command_sequence:
+  # -- Phase 1: settle --
+  - {duration: 2.0, vx:  0.0, wz:  0.0, height: 0.30}
+
+  # -- Phase 2: hard accel/decel oscillations (max pitch excitation) --
+  - {duration: 2.0, vx:  1.5, wz:  0.0, height: 0.30}   # full forward  → pitch fwd
+  - {duration: 2.0, vx: -1.5, wz:  0.0, height: 0.30}   # full backward → pitch bwd
+  - {duration: 2.0, vx:  1.5, wz:  0.0, height: 0.30}   # repeat
+  - {duration: 2.0, vx: -1.5, wz:  0.0, height: 0.30}
+  - {duration: 1.0, vx:  0.0, wz:  0.0, height: 0.30}   # stop
+
+  # -- Phase 3: forward while changing height (pitch + leg geometry change) --
+  - {duration: 2.0, vx:  1.0, wz:  0.0, height: 0.35}   # moving + body up
+  - {duration: 2.0, vx:  1.0, wz:  0.0, height: 0.25}   # moving + body down
+  - {duration: 1.0, vx:  0.0, wz:  0.0, height: 0.30}   # stop + return height
+
+  # -- Phase 4: forward + yaw (pitch + roll combined) --
+  - {duration: 3.0, vx:  1.0, wz:  2.0, height: 0.30}   # forward + spin left
+  - {duration: 3.0, vx:  1.0, wz: -2.0, height: 0.30}   # forward + spin right

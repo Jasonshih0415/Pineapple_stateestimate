@@ -4,7 +4,7 @@ state_dim: 25
 
 # Process Noise (Q): Model prediction uncertainty
 process_noise:
-  pos: [1.0e-4, 1.0e-4, 1.0e-4] 
+  pos: [1.0e-5, 1.0e-5, 1.0e-5]
   vel: [1.0e-3, 1.0e-3, 1.0e-3]  # IMU accel integration uncertainty
   quat: [1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4] # Quaternion uncertainty
   foot_pos: 1.0e-3 # Rolling contact point variation
@@ -19,6 +19,7 @@ meas_noise:
   height: 1.0e-3 # Height constraint tolerance
   wheel_vel: 1.0e-3 # Encoder velocity uncertainty
   yaw: 1.0e-2 # Yaw measurement uncertainty
+  nhc: 5.0e-3 # Non-holonomic constraint: lateral body velocity = 0
   
 # Initial Covariance (P0): Initial state uncertainty
 init_cov:

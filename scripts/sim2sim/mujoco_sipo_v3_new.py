@@ -201,19 +201,17 @@ class SIPO:
             S_w = cs.mtimes(R_dot, R_curr.T)
             w_wheel = cs.vertcat(S_w[2,1], S_w[0,2], S_w[1,0])
             
-            r_vec_world = cs.DM([0, 0, -self.wheel_radius])
-            
-            p_foot = p_center + r_vec_world
-            v_foot = v_center + cs.cross(w_wheel, r_vec_world)
-            
-            z_kin_sym_list.append(p_foot)
-            z_kin_sym_list.append(v_foot)
+            # Output hub center, hub velocity, and wheel angular velocity separately.
+            # The radius is applied in the correct frame (world Z) inside the measurement model.
+            z_kin_sym_list.append(p_center)   # hub position in body frame
+            z_kin_sym_list.append(v_center)   # hub linear velocity in body frame
+            z_kin_sym_list.append(w_wheel)    # wheel angular velocity in body frame
             R_hub_sym_list.append(R_hub)
 
         z_kin_sym = cs.vertcat(*z_kin_sym_list)
         self.fk_func = cs.Function('fk', [q_kin_sym, dq_kin_sym], [z_kin_sym])
         self.R_hub_func = cs.Function('R_hub_func', [q_kin_sym], R_hub_sym_list)
-        self.fk_stride = 6  # values per leg: [p_foot(3), v_foot(3)]
+        self.fk_stride = 9  # values per leg: [p_hub(3), v_hub(3), w_wheel(3)]
         
         # ---------------------------------------------------------
         # 2. Prediction Model f(x, u, dt)
@@ -293,27 +291,52 @@ class SIPO:
         y_list = []
         R_inv = R_base.T
         w_body_curr = gyro_in - bg
-        
+
+        # Evaluate hub rotation matrices symbolically for current joint angles.
+        # R_hub[i] is the rotation from base frame to wheel-hub frame for leg i,
+        # computed before the wheel spin joint — so it captures hip/knee angles only.
+        R_hubs = self.R_hub_func(q_kin_sym)
+
         for i in range(self.num_legs):
-            p_rf = z_kin_sym[i*6 : i*6+3]
-            v_rf = z_kin_sym[i*6+3 : i*6+6]
-            
-            # Get absolute position of contact point in world frame calculated by kinematics
-            p_foot_kin_world = pos + cs.mtimes(R_base, p_rf)
-            
+            # FK outputs 9 values per leg: [p_hub(3), v_hub(3), w_wheel(3)]
+            p_hub  = z_kin_sym[i*9 : i*9+3]
+            v_hub  = z_kin_sym[i*9+3 : i*9+6]
+            w_whl  = z_kin_sym[i*9+6 : i*9+9]
+
+            # --- Correct contact-from-hub vector accounting for hip abduction ---
+            # Wheel spin axis in world frame (wheel spins around hub Y axis)
+            wheel_axis_body  = cs.mtimes(R_hubs[i], cs.DM([0.0, 1.0, 0.0]))
+            wheel_axis_world = cs.mtimes(R_base, wheel_axis_body)
+            # Contact point = lowest point of wheel = project world-down onto wheel plane
+            world_down = cs.DM([0.0, 0.0, -1.0])
+            proj         = cs.dot(world_down, wheel_axis_world) * wheel_axis_world
+            d_world      = world_down - proj
+            d_norm       = cs.sqrt(cs.sumsqr(d_world) + 1e-12)
+            r_contact_world = self.wheel_radius * d_world / d_norm  # hub-to-contact in world
+            r_body          = cs.mtimes(R_base.T, r_contact_world)  # same in body frame
+
+            # Foot position in world: hub rotated to world + contact offset
+            p_foot_kin_world = pos + cs.mtimes(R_base, p_hub) + r_contact_world
+
             # 1. Position Residual
             # Wheeled robots cannot bind X, Y rigidly, otherwise turning will cause tearing.
             # We force X, Y errors to 0, keeping only the Z height constraint (Z=0).
-            res_pos = cs.vertcat(0, 0, p_foot_kin_world[2]) 
+            res_pos = cs.vertcat(0, 0, p_foot_kin_world[2])
             y_list.append(res_pos)
-            
+
             # 2. Velocity Residual
-            v_foot_rel = v_rf + cs.cross(w_body_curr, p_rf)
-            res_vel = vel + cs.mtimes(R_base, v_foot_rel)
+            # Contact velocity in body frame = hub vel
+            #   + body angular velocity contribution at hub center
+            #   + body angular velocity contribution at contact offset
+            #   + wheel spin contribution at contact offset
+            v_contact_body = (v_hub
+                              + cs.cross(w_body_curr, p_hub)
+                              + cs.cross(w_body_curr + w_whl, r_body))
+            res_vel = vel + cs.mtimes(R_base, v_contact_body)
             y_list.append(res_vel)
-            
+
             # 3. Height Residual
-            res_h = p_foot_kin_world[2] 
+            res_h = p_foot_kin_world[2]
             y_list.append(res_h)
             
             # 4. Wheel Velocity Residual
@@ -323,9 +346,15 @@ class SIPO:
         # 5. Yaw Residual
         qw, qx, qy, qz = quat[0], quat[1], quat[2], quat[3]
         yaw_est = cs.atan2(2.0*(qw*qz + qx*qy), 1.0 - 2.0*(qy**2 + qz**2))
-        res_yaw = yaw_in - yaw_est 
+        res_yaw = yaw_in - yaw_est
         y_list.append(res_yaw)
-        
+
+        # 6. Non-Holonomic Constraint: lateral body velocity must be zero
+        # Differential drive robots cannot slide sideways — enforce vy_body = 0
+        vel_body = cs.mtimes(R_base.T, vel)
+        res_nhc = vel_body[1]
+        y_list.append(res_nhc)
+
         y_vec = cs.vertcat(*y_list)
         self.h_func = cs.Function('h', [x_sym, q_kin_sym, dq_kin_sym, gyro_in, yaw_in, wvel_meas], [y_vec])
         self.avg_func = cs.Function('H', [x_sym, q_kin_sym, dq_kin_sym, gyro_in, yaw_in, wvel_meas], [cs.jacobian(y_vec, x_sym)])
@@ -375,7 +404,7 @@ class SIPO:
         return res
 
     def update(self, qpos_sense, qvel_sense, contact_flags, gyro, wheel_vel_meas, yaw_meas=None):
-        meas_dim = self.meas_per_leg * self.num_legs + 1
+        meas_dim = self.meas_per_leg * self.num_legs + 2  # +1 yaw, +1 NHC
         
         if yaw_meas is None:
             qw, qx, qy, qz = self.x[self.idx_quat]
@@ -402,10 +431,13 @@ class SIPO:
             idx = i * self.meas_per_leg
             R[idx:idx+self.meas_per_leg, idx:idx+self.meas_per_leg] = np.diag(r_base_diag * scale)
             
+        yaw_idx = meas_dim - 2
+        nhc_idx = meas_dim - 1
         if yaw_meas is None:
-            R[-1, -1] = 1e6 
+            R[yaw_idx, yaw_idx] = 1e6
         else:
-            R[-1, -1] = mn.get('yaw', 1e-2)
+            R[yaw_idx, yaw_idx] = mn.get('yaw', 1e-2)
+        R[nhc_idx, nhc_idx] = mn.get('nhc', 5e-3)
             
         innovation = -y
         S = H @ self.P @ H.T + R

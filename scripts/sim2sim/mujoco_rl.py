@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import time
 from dataclasses import dataclass, field
@@ -137,15 +139,15 @@ class SipoRunner:
         config: SimConfig,
         base_body_id: int,
     ) -> "SipoRunner":
-        from mujoco_sipo_v3 import SIPO, get_contact_states
-
+        # from mujoco_sipo_v3 import SIPO, get_contact_states
+        from mujoco_sipo_v3_new import SIPO, get_contact_states
         sipo = SIPO(config.xml_path)
         mujoco.mj_forward(model, data)
 
         init_qpos_sense = data.qpos[7 : 7 + config.num_actions].copy()
         init_qvel_sense = data.qvel[6 : 6 + config.num_actions].copy()
         z_kin = sipo.get_kinematics(init_qpos_sense, init_qvel_sense)
-        feet_pos_flat = z_kin.reshape(sipo.num_legs, 6)[:, :3].flatten()
+        feet_pos_flat = z_kin.reshape(sipo.num_legs, sipo.fk_stride)[:, :3].flatten()
 
         sipo.init_state(
             data.xipos[base_body_id].copy(),
@@ -188,7 +190,7 @@ class SipoRunner:
         buffers.vel_body.append(
             quat_rotate_inverse(sipo_state[self.sipo.idx_quat], sipo_state[self.sipo.idx_vel])
         )
-        buffers.gt_pos.append(data.xipos[self.base_body_id].copy())
+        buffers.gt_pos.append(data.xpos[self.base_body_id].copy())
         buffers.gt_vel.append(data.cvel[self.base_body_id][3:6].copy())
         buffers.gt_quat.append(data.xquat[self.base_body_id].copy())
         buffers.gt_vel_body.append(
@@ -204,9 +206,56 @@ class SipoRunner:
         buffers.gt_yaw_rate.append(gt_w_body[2])
 
 
+@dataclass
+class CommandStep:
+    duration: float
+    vx: float = 0.0
+    vy: float = 0.0
+    wz: float = 0.0
+    height: float | None = None
+
+
+class CommandSequencer:
+    """Replays a fixed timed sequence of velocity/height commands."""
+
+    def __init__(self, steps: list[CommandStep], default_height: float):
+        self.steps = steps
+        self.default_height = default_height
+        self._boundaries: list[float] = []
+        t = 0.0
+        for s in steps:
+            t += s.duration
+            self._boundaries.append(t)
+
+    @property
+    def total_duration(self) -> float:
+        return self._boundaries[-1] if self._boundaries else 0.0
+
+    def get_command(self, sim_time: float) -> tuple[np.ndarray, float]:
+        for i, step in enumerate(self.steps):
+            if sim_time < self._boundaries[i]:
+                height = step.height if step.height is not None else self.default_height
+                return np.array([step.vx, step.vy, step.wz], dtype=np.float32), height
+        last = self.steps[-1]
+        height = last.height if last.height is not None else self.default_height
+        return np.array([last.vx, last.vy, last.wz], dtype=np.float32), height
+
+
 def load_config(config_file: str) -> SimConfig:
     with open(config_file, "r") as f:
         return SimConfig.from_dict(yaml.load(f, Loader=yaml.FullLoader))
+
+
+def load_command_sequence(config_file: str, default_height: float) -> CommandSequencer | None:
+    with open(config_file, "r") as f:
+        raw = yaml.load(f, Loader=yaml.FullLoader)
+    steps_raw = raw.get("command_sequence", None)
+    if steps_raw is None:
+        return None
+    steps = [CommandStep(**s) for s in steps_raw]
+    seq = CommandSequencer(steps, default_height)
+    print(f"Command sequence loaded: {len(steps)} steps, {seq.total_duration:.1f}s total.")
+    return seq
 
 
 def parse_bool(value: str | bool) -> bool:
@@ -401,6 +450,7 @@ def run_simulation(
     policy,
     teleop: HeadlessTeleop,
     enable_sipo: bool = False,
+    sequencer: CommandSequencer | None = None,
 ) -> tuple[HistoryBuffers, SipoBuffers | None]:
     target_dof_pos = config.default_angles.copy()
     target_dof_vel = np.zeros(config.num_actions)
@@ -451,9 +501,14 @@ def run_simulation(
             if sipo_runner is not None:
                 sipo_runner.update(model, data, qpos, qvel, imu_acc, ang_vel_b, config)
 
-            cmd_vel = np.array(teleop.get_command(), dtype=np.float32)
+            if sequencer is not None:
+                sim_time = counter * config.simulation_dt
+                cmd_vel, cmd_height_val = sequencer.get_command(sim_time)
+            else:
+                cmd_vel = np.array(teleop.get_command(), dtype=np.float32)
+                cmd_height_val = teleop.get_height_command()
             cmd_vel = apply_diamond_constraint(cmd_vel, config.max_lin, config.max_ang)
-            cmd_height = np.array([teleop.get_height_command()], dtype=np.float32)
+            cmd_height = np.array([cmd_height_val], dtype=np.float32)
 
             lin_vel_b = quat_rotate_inverse(imu_quat, lin_vel_i)
             gravity_b = get_gravity_orientation(imu_quat)
@@ -611,7 +666,7 @@ def plot_sipo(buffers: SipoBuffers, time_data: list[float]):
 
     ax_z = plt.subplot(5, 1, 5)
     ax_z.set_title("Z Height (Position Z) [m]")
-    ax_z.plot(t, [p[2] + buffers.wheel_radius for p in buffers.pos], label="SIPO")
+    ax_z.plot(t, [p[2] for p in buffers.pos], label="SIPO")
     ax_z.plot(t, [p[2] for p in buffers.gt_pos], label="GT", linestyle="--")
     ax_z.set_xlabel("Time (s)")
     ax_z.legend()
@@ -639,15 +694,25 @@ def main():
         default=False,
         help="enable SIPO estimation and result plotting (true/false)",
     )
+    parser.add_argument(
+        "--seq",
+        type=parse_bool,
+        default=False,
+        help="run scripted command sequence from config instead of teleop (true/false)",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config)
+    sequencer = load_command_sequence(args.config, config.cmd_height_init) if args.seq else None
     policy = torch.jit.load(config.policy_path)
     teleop = make_teleop(config)
-    print("Headless teleop initialized (no GUI window).")
+    if sequencer is None:
+        print("Headless teleop active.")
+    else:
+        print("Running scripted command sequence (keyboard/gamepad ignored).")
 
     try:
-        buffers, sipo_buffers = run_simulation(config, policy, teleop, args.sipo)
+        buffers, sipo_buffers = run_simulation(config, policy, teleop, args.sipo, sequencer)
         if sipo_buffers is not None:
             plot_sipo(sipo_buffers, buffers.time)
         plot_history(buffers)

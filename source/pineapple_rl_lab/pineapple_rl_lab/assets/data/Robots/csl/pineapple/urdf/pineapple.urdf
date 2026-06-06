@@ -3,7 +3,7 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="pineapple v1.1">
+  name="pineapple_v1">
   <mujoco>
     <compiler
       meshdir="../meshes"
@@ -32,7 +32,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/base_link.STL" />
+          filename="package://pineapple_v1/meshes/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -95,7 +95,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/battery.STL" />
+          filename="package://pineapple_v1/meshes/battery.STL" />
       </geometry>
       <material
         name="">
@@ -116,232 +116,6 @@
       link="battery" />
     <axis
       xyz="0 0 0" />
-  </joint>
-  <link
-    name="R_hip">
-    <inertial>
-      <origin
-        xyz="-0.054201 0.0016168 0.00050585"
-        rpy="0 0 0" />
-      <mass
-        value="0.585" />
-      <inertia
-        ixx="0.00045956"
-        ixy="0.00000742"
-        ixz="-0.00000128"
-        iyy="0.00077661"
-        iyz="0.00000917"
-        izz="0.00050968" />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://pineapple v1.1/meshes/R_hip.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 1 1 1" />
-      </material>
-    </visual>
-  </link>
-  <joint
-    name="R_hip_joint"
-    type="revolute">
-    <origin
-      xyz="0.047159 -0.06125 0.066001"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="R_hip" />
-    <axis
-      xyz="1 0 0" />
-    <limit
-      lower="-0.17444"
-      upper="0.52358"
-      effort="23.7"
-      velocity="30.1" />
-  </joint>
-  <link
-    name="R_thigh">
-    <inertial>
-      <origin
-        xyz="-0.0014005 -0.015871 -0.13295"
-        rpy="0 0 0" />
-      <mass
-        value="0.911" />
-      <inertia
-        ixx="0.00359239"
-        ixy="0.00001718"
-        ixz="0.00000539"
-        iyy="0.00399866"
-        iyz="0.00016395"
-        izz="0.00085307" />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://pineapple v1.1/meshes/R_thigh.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.098039 0.098039 0.098039 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="0.0003 -0.0095 -0.049"
-        rpy="0 0 0" />
-      <geometry>
-       <box size="0.055 0.019 0.12"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin
-        xyz="0 -0.0175 -0.165"
-        rpy="1.57 0 0" />
-      <geometry>
-       <cylinder radius="0.0515" length="0.035"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint
-    name="R_thigh_joint"
-    type="revolute">
-    <origin
-      xyz="-0.05675 -0.01995 0"
-      rpy="0 0 0" />
-    <parent
-      link="R_hip" />
-    <child
-      link="R_thigh" />
-    <axis
-      xyz="0 1 0" />
-    <limit
-      lower="0"
-      upper="1.57"
-      effort="23.7"
-      velocity="30.1" />
-  </joint>
-  <link
-    name="R_calf">
-    <inertial>
-      <origin
-        xyz="-7.3779E-05 -0.014526 -0.11981"
-        rpy="0 0 0" />
-      <mass
-        value="0.567" />
-      <inertia
-        ixx="0.00246258"
-        ixy="-0.00000032"
-        ixz="-0.00000235"
-        iyy="0.00252067"
-        iyz="0.00007208"
-        izz="0.00022736"  />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://pineapple v1.1/meshes/R_calf.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.1451 0.1451 0.1451 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="-0.0006 -0.0118 -0.0465"
-        rpy="0 0 0" />
-      <geometry>
-        <box size="0.048 0.0236 0.093"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint
-    name="R_calf_joint"
-    type="revolute">
-    <origin
-      xyz="0 -0.0383 -0.165"
-      rpy="0 0 0" />
-    <parent
-      link="R_thigh" />
-    <child
-      link="R_calf" />
-    <axis
-      xyz="0 1 0" />
-    <limit
-      lower="-3.141"
-      upper="0"
-      effort="23.7"
-      velocity="30.1" />
-  </joint>
-  <link
-    name="R_wheel">
-    <inertial>
-      <origin
-        xyz="2.8013E-11 -0.0095126 -9.34E-11"
-        rpy="0 0 0" />
-      <mass
-        value="0.35" />
-      <inertia
-        ixx="0.00056018"
-        ixy="0"
-        ixz="0"
-        iyy="0.00108926"
-        iyz="0"
-        izz="0.00056018" />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://pineapple v1.1/meshes/R_wheel.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.15294 0.15294 0.15294 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="0 -0.0085 0"
-        rpy="1.57 0 0" />
-      <geometry>
-        <cylinder radius="0.07" length="0.023"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint
-    name="R_wheel_joint"
-    type="continuous">
-    <origin
-      xyz="0 -0.02705 -0.165"
-      rpy="0 0 0" />
-    <parent
-      link="R_calf" />
-    <child
-      link="R_wheel" />
-    <axis
-      xyz="0 1 0" />
-    <limit
-      effort="3.69"
-      velocity="60" />
   </joint>
   <link
     name="L_hip">
@@ -365,7 +139,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/L_hip.STL" />
+          filename="package://pineapple_v1/meshes/L_hip.STL" />
       </geometry>
       <material
         name="">
@@ -414,7 +188,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/L_thigh.STL" />
+          filename="package://pineapple_v1/meshes/L_thigh.STL" />
       </geometry>
       <material
         name="">
@@ -433,7 +207,7 @@
     <collision>
       <origin
         xyz="0 0.0175 -0.165"
-        rpy="1.57 0 0" />
+        rpy="1.5707963267948966 0 0" />
       <geometry>
        <cylinder radius="0.0515" length="0.035"/>
       </geometry>
@@ -479,7 +253,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/L_calf.STL" />
+          filename="package://pineapple_v1/meshes/L_calf.STL" />
       </geometry>
       <material
         name="">
@@ -536,7 +310,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://pineapple v1.1/meshes/L_wheel.STL" />
+          filename="package://pineapple_v1/meshes/L_wheel.STL" />
       </geometry>
       <material
         name="">
@@ -547,7 +321,7 @@
     <collision>
       <origin
         xyz="0 0.0085 0"
-        rpy="1.57 0 0" />
+        rpy="1.5707963267948966 0 0" />
       <geometry>
         <cylinder radius="0.07" length="0.023"/>
       </geometry>
@@ -555,7 +329,7 @@
   </link>
   <joint
     name="L_wheel_joint"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0.02705 -0.165"
       rpy="0 0 0" />
@@ -563,6 +337,232 @@
       link="L_calf" />
     <child
       link="L_wheel" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="3.69"
+      velocity="60" />
+  </joint>
+  <link
+    name="R_hip">
+    <inertial>
+      <origin
+        xyz="-0.054201 0.0016168 0.00050585"
+        rpy="0 0 0" />
+      <mass
+        value="0.585" />
+      <inertia
+        ixx="0.00045956"
+        ixy="0.00000742"
+        ixz="-0.00000128"
+        iyy="0.00077661"
+        iyz="0.00000917"
+        izz="0.00050968" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pineapple_v1/meshes/R_hip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+  </link>
+  <joint
+    name="R_hip_joint"
+    type="revolute">
+    <origin
+      xyz="0.047159 -0.06125 0.066001"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="R_hip" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-0.17444"
+      upper="0.52358"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="R_thigh">
+    <inertial>
+      <origin
+        xyz="-0.0014005 -0.015871 -0.13295"
+        rpy="0 0 0" />
+      <mass
+        value="0.911" />
+      <inertia
+        ixx="0.00359239"
+        ixy="0.00001718"
+        ixz="0.00000539"
+        iyy="0.00399866"
+        iyz="0.00016395"
+        izz="0.00085307" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pineapple_v1/meshes/R_thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.098039 0.098039 0.098039 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.0003 -0.0095 -0.049"
+        rpy="0 0 0" />
+      <geometry>
+       <box size="0.055 0.019 0.12"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin
+        xyz="0 -0.0175 -0.165"
+        rpy="1.5707963267948966 0 0" />
+      <geometry>
+       <cylinder radius="0.0515" length="0.035"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="-0.05675 -0.01995 0"
+      rpy="0 0 0" />
+    <parent
+      link="R_hip" />
+    <child
+      link="R_thigh" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="R_calf">
+    <inertial>
+      <origin
+        xyz="-7.3779E-05 -0.014526 -0.11981"
+        rpy="0 0 0" />
+      <mass
+        value="0.567" />
+      <inertia
+        ixx="0.00246258"
+        ixy="-0.00000032"
+        ixz="-0.00000235"
+        iyy="0.00252067"
+        iyz="0.00007208"
+        izz="0.00022736"  />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pineapple_v1/meshes/R_calf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.1451 0.1451 0.1451 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.0006 -0.0118 -0.0465"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.048 0.0236 0.093"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_calf_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.0383 -0.165"
+      rpy="0 0 0" />
+    <parent
+      link="R_thigh" />
+    <child
+      link="R_calf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-3.141"
+      upper="0"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="R_wheel">
+    <inertial>
+      <origin
+        xyz="2.8013E-11 -0.0095126 -9.34E-11"
+        rpy="0 0 0" />
+      <mass
+        value="0.35" />
+      <inertia
+        ixx="0.00056018"
+        ixy="0"
+        ixz="0"
+        iyy="0.00108926"
+        iyz="0"
+        izz="0.00056018" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pineapple_v1/meshes/R_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.15294 0.15294 0.15294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 -0.0085 0"
+        rpy="1.5707963267948966 0 0" />
+      <geometry>
+        <cylinder radius="0.07" length="0.023"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_wheel_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.02705 -0.165"
+      rpy="0 0 0" />
+    <parent
+      link="R_calf" />
+    <child
+      link="R_wheel" />
     <axis
       xyz="0 1 0" />
     <limit
