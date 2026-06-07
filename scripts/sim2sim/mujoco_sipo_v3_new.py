@@ -205,7 +205,7 @@ class SIPO:
             # The radius is applied in the correct frame (world Z) inside the measurement model.
             z_kin_sym_list.append(p_center)   # hub position in body frame
             z_kin_sym_list.append(v_center)   # hub linear velocity in body frame
-            z_kin_sym_list.append(w_wheel)    # wheel angular velocity in body frame
+            z_kin_sym_list.append(w_wheel)    # wheel angular velocity in body frame (from measured dq)
             R_hub_sym_list.append(R_hub)
 
         z_kin_sym = cs.vertcat(*z_kin_sym_list)
@@ -292,10 +292,7 @@ class SIPO:
         R_inv = R_base.T
         w_body_curr = gyro_in - bg
 
-        # Evaluate hub rotation matrices symbolically for current joint angles.
-        # R_hub[i] is the rotation from base frame to wheel-hub frame for leg i,
-        # computed before the wheel spin joint — so it captures hip/knee angles only.
-        R_hubs = self.R_hub_func(q_kin_sym)
+        r_world = cs.DM([0.0, 0.0, -self.wheel_radius])
 
         for i in range(self.num_legs):
             # FK outputs 9 values per leg: [p_hub(3), v_hub(3), w_wheel(3)]
@@ -303,20 +300,11 @@ class SIPO:
             v_hub  = z_kin_sym[i*9+3 : i*9+6]
             w_whl  = z_kin_sym[i*9+6 : i*9+9]
 
-            # --- Correct contact-from-hub vector accounting for hip abduction ---
-            # Wheel spin axis in world frame (wheel spins around hub Y axis)
-            wheel_axis_body  = cs.mtimes(R_hubs[i], cs.DM([0.0, 1.0, 0.0]))
-            wheel_axis_world = cs.mtimes(R_base, wheel_axis_body)
-            # Contact point = lowest point of wheel = project world-down onto wheel plane
-            world_down = cs.DM([0.0, 0.0, -1.0])
-            proj         = cs.dot(world_down, wheel_axis_world) * wheel_axis_world
-            d_world      = world_down - proj
-            d_norm       = cs.sqrt(cs.sumsqr(d_world) + 1e-12)
-            r_contact_world = self.wheel_radius * d_world / d_norm  # hub-to-contact in world
-            r_body          = cs.mtimes(R_base.T, r_contact_world)  # same in body frame
+            # Contact-from-hub in body frame: radius drops straight down in world Z
+            r_body = cs.mtimes(R_base.T, r_world)
 
-            # Foot position in world: hub rotated to world + contact offset
-            p_foot_kin_world = pos + cs.mtimes(R_base, p_hub) + r_contact_world
+            # Foot position in world: hub + radius straight down in world Z
+            p_foot_kin_world = pos + cs.mtimes(R_base, p_hub) + r_world
 
             # 1. Position Residual
             # Wheeled robots cannot bind X, Y rigidly, otherwise turning will cause tearing.
@@ -326,9 +314,8 @@ class SIPO:
 
             # 2. Velocity Residual
             # Contact velocity in body frame = hub vel
-            #   + body angular velocity contribution at hub center
-            #   + body angular velocity contribution at contact offset
-            #   + wheel spin contribution at contact offset
+            #   + body rotation at hub
+            #   + body rotation + wheel spin at contact offset (r_body)
             v_contact_body = (v_hub
                               + cs.cross(w_body_curr, p_hub)
                               + cs.cross(w_body_curr + w_whl, r_body))
