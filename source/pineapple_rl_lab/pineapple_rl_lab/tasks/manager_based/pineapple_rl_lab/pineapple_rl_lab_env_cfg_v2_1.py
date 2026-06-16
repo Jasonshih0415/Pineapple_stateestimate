@@ -179,7 +179,7 @@ class PineappleEventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=BASE_LINK_NAME),
-            "mass_distribution_params": (-1.0, 1.5),
+            "mass_distribution_params": (-1.0, 3.5),
             "operation": "add",
         },
     )
@@ -279,7 +279,7 @@ class PineappleRewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINT_NAMES)},
     )
     lin_vel_z_l2 = RewardTermCfg(func=mdp.lin_vel_z_l2, weight=-1.0)
-    ang_vel_xy_l2 = RewardTermCfg(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    ang_vel_xy_l2 = RewardTermCfg(func=mdp.ang_vel_xy_l2, weight=-0.1)
     base_orientation = RewardTermCfg(
         func=mdp.flat_orientation_l2, weight=-20.0, params={"asset_cfg": SceneEntityCfg("robot")}
     )

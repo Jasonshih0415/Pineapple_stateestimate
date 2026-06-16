@@ -1,5 +1,6 @@
-policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-11_00-28-28/exported/policy.pt"  # [best] height with new delay
-# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-10_18-40-07/exported/policy.pt"  # [best] fix height, smooth--
+# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-04_00-09-50/exported/policy.pt"  # height with new delay
+# policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-05-10_18-40-07/exported/policy.pt"  # fix height, smooth--
+policy_path: "logs/rsl_rl/pineapple_flat_v2/2026-06-15_11-13-33/exported/policy.pt"  # [best] add more payload
 
 xml_path: "source/pineapple_rl_lab/pineapple_rl_lab/assets/data/Robots/csl/pineapple_v2/scene.xml"
 
@@ -16,6 +17,7 @@ kds: [1.0, 0.5, 0.5, 0.3, 1.0, 0.5, 0.5, 0.3]
 
 # default_angles, order matches xml joint order
 default_angles: [-0.1,  0.83, -1.484, 0.0, 0.1, 0.83, -1.484, 0.0]
+# default_angles: [-0.0,  0.83, -1.484, 0.0, 0.0, 0.83, -1.484, 0.0]
 
 lin_vel_scale: 2.0
 ang_vel_scale: 0.25
